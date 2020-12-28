@@ -1,5 +1,5 @@
 import threading
-
+import atexit
 import adafruit_bitbangio as bitbangio
 import adafruit_mcp3xxx.mcp3008 as MCP
 import board
@@ -9,12 +9,15 @@ import time
 from adafruit_mcp3xxx.analog_in import AnalogIn
 from rpilcdmenu import *
 from rpilcdmenu.items import *
+from RPi import GPIO
+from time import sleep
 
 import includes.helpers as helpers
 
 try:
     helpers = helpers.helpers()
-    services = helpers.services
+    services = helpers.SERVICES
+    default_service = helpers.DEFAULT_SERVICE
 except Exception as e:
     print("Exiting with error : " + str(e))
 
@@ -27,7 +30,6 @@ last_gpio = 0
 menu = None
 mode = 'raspotify'
 count = 0
-
 
 class BaseThread(threading.Thread):
     def __init__(self, callback=None, callback_args=None, *args, **kwargs):
@@ -92,10 +94,16 @@ def btn_press(btn):
     # callback on button press
     if btn == "Enter":
         menu = menu.processEnter()
+    if btn == "Auto Tuning":
+        menu = menu.processEnter()
     if btn  == "Info":
         playback_status(mode, "current")
+    if btn == "Function":
+        menu = menu.processUp()
+    if  btn == "Band":
+        menu = menu.processDown()
     time.sleep(0.25)
-    print(menu)
+    return
 
 
 
@@ -134,6 +142,34 @@ def rotary_encoder():
 
     print("Rotary thread start successfully, listening for turns")
 
+def rotary_encoder_2():
+    clk = 17
+    dt = 27
+
+    GPIO.setmode(GPIO.BCM)
+    # set to GPIO.PUD_UP as the TEAC panel uses an encoder that is grounded
+    GPIO.setup(clk, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+    GPIO.setup(dt, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+    counter = 0
+    clkLastState = GPIO.input(clk)
+
+    try:
+        print("Rotary thread start successfully, listening for turns")
+        while True:
+            clkState = GPIO.input(clk)
+            dtState = GPIO.input(dt)
+            if clkState != clkLastState:
+                sleep(0.1)
+                if dtState != clkState:
+                    rotary_turn(True)
+                    counter += 1
+                else:
+                    rotary_turn(False)
+                    counter -= 1
+            clkLastState = clkState
+    finally:
+        GPIO.cleanup()
 
 # rotary encoder callback
 def rotary_turn(clockwise):
@@ -142,11 +178,11 @@ def rotary_turn(clockwise):
         menu = menu.processDown()
     if clockwise == False:
         menu = menu.processUp()
-    print(menu)
+    return
 
 
 
-def service_manager(item, action, name, services):
+def service_manager(item, action, name, service_list):
 
     global menu
     global mode
@@ -154,9 +190,8 @@ def service_manager(item, action, name, services):
     failed = []
 
     service = None
-
     # get the service name you wish to action
-    for i in services:
+    for i in service_list:
         for k, v in i.items():
             n = v['name']
             s = v['details']['service']
@@ -164,9 +199,13 @@ def service_manager(item, action, name, services):
             if n == name:
                 service = s
 
-    # stop all other services if you're starting another
-    if action == 'start':
-        for i in services:
+
+    # print("service is " + str(service))
+    # stop all other services if you're starting another, then start the dependencies we need
+    if action == 'start' and service !=None or action == 'stop-all' and name == None:
+        # read all service items except the one you're starting and stop them and their dependencies
+        # or stop all services
+        for i in service_list:
             for k,v in i.items():
                 n2 = v['name']
                 s2 = v['details']['service']
@@ -176,12 +215,36 @@ def service_manager(item, action, name, services):
                 else:
                     status = str(helpers.service(s2, 'stop'))
                     if status == "1":
-                        failed =+ n2
+                        failed.append(n2)
+                    for i in d2:
+                        # print(i)
+                        d_service = d2[i]['service']
+                        d_on_action = d2[i]['on_action']
+                        d_action = d2[i]['action']
+                        if d_on_action == 'stop':
+                            d_status = str(helpers.service(d_service, d_action))
+                            if d_status == "1" and d_action != 'disable':
+                                failed.append(d_service)
+            # start the service dependenices
+        for i in service_list:
+            for k,v in i.items():
+                n3 = v['name']
+                s3 = v['details']['service']
+                d3 = v['details']['dependancies']
+                if n3 == name:
+                    for i in d3:
+                        # print(i)
+                        d_service = d3[i]['service']
+                        d_on_action = d3[i]['on_action']
+                        d_action = d3[i]['action']
+                        if d_on_action == 'start':
+                            d_status = str(helpers.service(d_service, d_action))
+                            if d_status == "1" and d_action != 'disable':
+                                failed.append(d_service)
 
-    print(failed)
     # show error message on failure
     if len(failed) > 0:
-        display_message("Failed to stop %s services" % failed)
+        display_message("Failed to stop or start %s services" % failed)
 
     elif service != None:
         # proceed with other action if theres no failures
@@ -197,9 +260,10 @@ def service_manager(item, action, name, services):
             display_message("%s processed" % name)
         else:
             display_message("Failed to process %s " % name)
-    return menu_create(services)
 
-
+    if menu!=None:
+        return menu_create(service_list)
+    return
 
 def check_service(service):
     status = str(helpers.service(service, 'status'))
@@ -220,12 +284,15 @@ def playback_status(mode, action):
             track = result[1]
             display_message(artist + "-" + track)
 
+
 def display_message(message):
     global menu
-    menu.clearDisplay()
-    menu.message(message)
-    time.sleep(2)
-    print("message displayed" + str(menu))
+    if menu!=None:
+        menu.clearDisplay()
+        menu.message(message.upper())
+        time.sleep(2)
+        print(menu)
+        return menu.render()
     return
 
 def menu_create(services):
@@ -234,13 +301,11 @@ def menu_create(services):
     global mode
 
     if menu == None:
-        print("init menu")
+        # print("init menu")
         menu = RpiLCDMenu(7, 8, [25, 24, 23, 15])
-        print("menu created from none " + str(menu))
     if menu != None:
-        print("re-init menu")
+        # print("re-init menu")
         menu = RpiLCDMenu(7, 8, [25, 24, 23, 15])
-        print("menu set to none and re-created " + str(menu))
 
     menu_item = 1
 
@@ -251,27 +316,26 @@ def menu_create(services):
                 service = v['details']['service']
                 dependancies = v['details']['dependancies']
                 if check_service(service) == "0":
-                    menu_function = FunctionItem(name + " on", service_manager,
+                    menu_function = FunctionItem(("%s ON" % name).upper(), service_manager,
                                                  [menu_item, 'stop', name, services])
                     menu.append_item(menu_function)
+                    menu_item = + 1
                 else:
-                    menu_function = FunctionItem(name + " off", service_manager,
+                    menu_function = FunctionItem(("%s OFF" % name).upper(), service_manager,
                                                  [menu_item, 'start', name, services])
                     menu.append_item(menu_function)
-                menu_item =+ 1
-        print(str(menu_item) +  " items created")
+                    menu_item = + 1
+
     except Exception as e:
         print(e)
-    print("menu items added" + str(menu))
     menu.start()
     menu.debug()
-
     return menu.render()
 
 
 def main():
 
-    global menu
+    global menu, default_service, services
 
     # move these threads out of here if theres a problem with controls
     # mcp3008 on BaseThread with callback
@@ -287,7 +351,7 @@ def main():
 
     rotary_encoder_thread = BaseThread(
         name='rotary_encoder',
-        target=rotary_encoder
+        target=rotary_encoder_2
         # callback=rotary_turn,
         # callback_args=("direction")
     )
@@ -295,13 +359,20 @@ def main():
     # start rotary encoder thread
     rotary_encoder_thread.start()
 
+
     if menu == None:
+        if default_service:
+            service_manager(0, 'start', default_service, services)
         menu_create(services)
+
 
     input("Loaded")
 
 
-
-
 if __name__ == "__main__":
-    main()
+    try:
+        main()
+    except KeyboardInterrupt:
+        service_manager(None, 'stop-all', None , services)
+        display_message("Bye!")
+        helpers.app_shutdown().shutdown_app()

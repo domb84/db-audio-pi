@@ -1,27 +1,27 @@
 import ast
 import configparser
 import os
-import subprocess
-
+from subprocess import Popen, PIPE, call
+import signal
 import spotipy
 import spotipy.oauth2
 from spotipy.oauth2 import SpotifyOAuth
-
-import json
+import sys
 
 
 class helpers():
 
     def __init__(self):
-        self.kill = False
+        # self.kill = False
         self.config_path = "db_audio_pi.conf"
         self.config = self.configparser(self.config_path)
         try:
-            self.services = ast.literal_eval(self.config['DEFAULT']['SERVICES'])
+            self.SERVICES = ast.literal_eval(self.config['DEFAULT']['SERVICES'])
             self.DEVICE = self.config['DEFAULT']['DEVICE']
             self.SPOTIPY_CLIENT_ID = self.config['SPOTIFY']['ID']
             self.SPOTIPY_CLIENT_SECRET = self.config['SPOTIFY']['SECRET']
             self.SPOTIPY_REDIRECT_URI = self.config['SPOTIFY']['REDIRECT_URI']
+            self.DEFAULT_SERVICE = self.config['DEFAULT']['DEFAULT_SERVICE']
         except:
             print("Variables not missing from conf")
 
@@ -46,15 +46,37 @@ class helpers():
     def service(self, service, action):
         try:
             if action == "start":
-                return_code = subprocess.call(['sudo', 'systemctl', action, service, '--quiet'])
+                return_code = call(['sudo', 'systemctl', action, service, '--quiet'])
                 return (return_code)
             elif action == "stop":
-                return_code = subprocess.call(['sudo', 'systemctl', action, service, '--quiet'])
+                return_code = call(['sudo', 'systemctl', action, service, '--quiet'])
+                return (return_code)
+            elif action == "enable":
+                return_code = call(['sudo', 'systemctl', action, service, '--quiet'])
+                return (return_code)
+            elif action == "disable":
+                return_code = call(['sudo', 'systemctl', action, service, '--quiet'])
                 return (return_code)
             elif action == "status":
-                return_code = subprocess.call(['sudo', 'systemctl', 'is-active', '--quiet', service])
+                return_code = call(['sudo', 'systemctl', 'is-active', '--quiet', service])
                 return (return_code)
-        except:
+            elif action == "kill":
+                check = Popen(['sudo', 'pgrep', '-c', service],stdout=PIPE)
+                output, err = check.communicate()
+                rc = check.returncode
+                # strip 'b' and line breaks from output
+                output = output.decode('utf-8').strip()
+                # if both rc and the output don't equal 0 then theres a process. otherwise assume they're already dead and return 0
+                if rc != "0" and output != "0":
+                    return_code = call(['sudo', 'killall', '-q', service])
+                    # print("return code is " +str(return_code))
+                    return (return_code)
+                else:
+                    # print(output)
+                    return (output)
+
+        except Exception as e:
+            print(e)
             return ("1")
 
     def power(self, action):
@@ -98,12 +120,32 @@ class helpers():
         def current_playing():
             try:
                 result = sp.current_user_playing_track()
-                artist = result['item']['artists'][0]['name']
-                track_name = result['item']['name']
-                return [artist, track_name]
+                print(result)
+                try:
+                    artist = result['item']['artists'][0]['name']
+                    track_name = result['item']['name']
+                    return [artist, track_name]
+                except:
+                    print(result)
             except Exception as e:
                 print(e)
                 return None
 
         if action == "current":
             return current_playing()
+
+    class app_shutdown:
+        def _init_(self):
+            signal.signal(signal.SIGINT, self.exit_gracefully)
+            signal.signal(signal.SIGTERM, self.exit_gracefully)
+
+        def exit_gracefully(self, signum, frame):
+            self.shutdown_app()
+
+        def shutdown_app(self):
+            # global kill
+            # kill = True
+            try:
+                sys.exit(0)
+            except SystemExit:
+                os._exit(0)
