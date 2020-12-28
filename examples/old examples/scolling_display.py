@@ -20,7 +20,7 @@ from datetime import datetime
 from subprocess import *
 from time import sleep, strftime
 from Queue import Queue
-from threading import Thread
+from threaded_main import Thread
 
 import smbus
 import os

@@ -18,7 +18,7 @@ import os
 import signal
 import subprocess
 import sys
-import threading
+import threaded_main
 
 from RPi import GPIO
 from queue import Queue
@@ -119,7 +119,7 @@ class RotaryEncoder():
 if __name__ == "__main__":
 
     queue = Queue()
-    event = threading.Event()
+    event = threaded_main.Event()
 
     def debug(str):
         if not DEBUG:

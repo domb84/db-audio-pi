@@ -28,7 +28,7 @@ def init():
 
 
 # Callback fn:
-def rotary_interrupt(gpio, level):
+def rotary_interrupt(gpio, level, tim):
     global last_A, last_B, last_gpio
 
     if gpio == Enc_A:
