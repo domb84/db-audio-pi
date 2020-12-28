@@ -284,6 +284,16 @@ def playback_status(mode, action):
             track = result[1]
             display_message(artist + "-" + track)
 
+    if mode == "bt_speaker":
+        result = helpers.bt_speaker(action)
+        if result == None:
+            display_message("No track playing")
+        else:
+            artist = result[0]
+            track = result[1]
+            display_message(artist + "-" + track)
+
+
 
 def display_message(message):
     global menu
@@ -303,6 +313,7 @@ def menu_create(services):
     if menu == None:
         # print("init menu")
         menu = RpiLCDMenu(7, 8, [25, 24, 23, 15])
+        display_message("Initialising")
     if menu != None:
         # print("re-init menu")
         menu = RpiLCDMenu(7, 8, [25, 24, 23, 15])

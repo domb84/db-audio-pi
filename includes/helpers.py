@@ -81,7 +81,7 @@ class helpers():
 
     def power(self, action):
         if action == "shutdown":
-            return_code = subprocess.call(['sudo', 'shutdown', '-h', 'now'])
+            return_code = call(['sudo', 'shutdown', '-h', 'now'])
 
 
     def spotify(self, action):
@@ -117,7 +117,7 @@ class helpers():
             except Exception as e:
                 print("Refreshing token failed")
 
-        def current_playing():
+        def current_playing_spotify():
             try:
                 result = sp.current_user_playing_track()
                 print(result)
@@ -132,7 +132,25 @@ class helpers():
                 return None
 
         if action == "current":
-            return current_playing()
+            return current_playing_spotify()
+
+    def bt_speaker(self, action):
+        def current_playing_bt():
+            track_info_path = "/tmp/.track"
+            track_info = self.configparser(track_info_path)
+            print(track_info)
+            try:
+                artist = track_info['INFO']['ARTIST']
+                track_name = track_info['INFO']['TITLE']
+                return [artist, track_name]
+            except Exception as e:
+                print(e)
+                return None
+
+        if action == "current":
+            return current_playing_bt()
+
+
 
     class app_shutdown:
         def _init_(self):
