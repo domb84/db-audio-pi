@@ -42,13 +42,13 @@ class helpers ():
     def service(self, service, action):
         try:
             if action == "start":
-                return_code = subprocess.call(['sudo', 'systemctl', action, service, '-q'])
+                return_code = subprocess.call(['sudo', 'systemctl', action, service, '--quiet'])
                 return(return_code)
             elif action == "stop":
-                return_code = subprocess.call(['sudo', 'systemctl', action, service, '-q'])
+                return_code = subprocess.call(['sudo', 'systemctl', action, service, '--quiet'])
                 return(return_code)
             elif action == "status":
-                return_code = subprocess.call(['sudo', 'systemctl', action, service, '-q', '--no-pager'])
+                return_code = subprocess.call(['sudo', 'systemctl', 'is-active', '--quiet', service])
                 return(return_code)
         except:
             return ("1")

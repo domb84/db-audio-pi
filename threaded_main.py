@@ -135,26 +135,37 @@ def rotary_turn(clockwise):
 def service_enable_disable(item, action, service, name, disable, disable_name):
     global menu
 
-    # set disabled to successful
-    disabled = "0"
-
-    status = str(helpers.service(service, action))
-
+    # disable any conflicting services
     if disable != None and action == 'start':
         disabled = str(helpers.service(disable, 'stop'))
+        # if it fails to disable the conflicting service, just exit
+        if disabled == "1":
+            menu.clearDisplay()
+            menu.message("Failed to disable %s" % disable_name)
+            time.sleep(2)
+            menu = None
+            menu_create(services)
+            return menu.render()
 
-    if disable != None and disabled != "0":
-        menu.clearDisplay()
-        menu.message("Failed to disable %s" % disable_name)
-        time.sleep(2)
-
+    disabled=0
+    # start the service if it's successful
+    status = str(helpers.service(service, action))
     menu.clearDisplay()
+
     if status == "0" and action == 'start':
         menu.message("%s enabled" % name)
     elif status == "0" and action == 'stop':
         menu.message("%s disabled" % name)
+
+    # if the service failed to start, start up the conflicting service again
+    elif disabled != "1" and status != "0":
+        disabled = str(helpers.service(disable, 'start'))
+        if disabled != "0":
+            menu.message("Failed to enable %s & %s" % name, disable_name)
+
     else:
         menu.message("Failed to enable %s " % name)
+
     time.sleep(2)
 
     menu = None
@@ -178,10 +189,10 @@ def menu_create(service_list):
         for i in services:
             service=i['service']
             if check_service(service) == "0":
-                menu_function = FunctionItem(i['name'] + " off", service_enable_disable, [menu_item, 'stop', i['service'], i['name'], i['disable'], i['disable_name']])
+                menu_function = FunctionItem(i['name'] + " on", service_enable_disable, [menu_item, 'stop', i['service'], i['name'], i['disable'], i['disable_name']])
                 menu.append_item(menu_function)
             else:
-                menu_function = FunctionItem(i['name'] + " on", service_enable_disable, [menu_item, 'start', i['service'], i['name'], i['disable'], i['disable_name']])
+                menu_function = FunctionItem(i['name'] + " off", service_enable_disable, [menu_item, 'start', i['service'], i['name'], i['disable'], i['disable_name']])
                 menu.append_item(menu_function)
     except Exception as e:
         print(e)
