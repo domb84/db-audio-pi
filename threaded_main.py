@@ -1,16 +1,22 @@
 import threading
-import digitalio, board
-import adafruit_mcp3xxx.mcp3008 as MCP
-from adafruit_mcp3xxx.analog_in import AnalogIn
+
 import adafruit_bitbangio as bitbangio
-import pigpio, time
+import adafruit_mcp3xxx.mcp3008 as MCP
+import board
+import digitalio
+import pigpio
+import time
+from adafruit_mcp3xxx.analog_in import AnalogIn
 from rpilcdmenu import *
 from rpilcdmenu.items import *
+
 import includes.helpers as helpers
 
-
-helpers = helpers.helpers()
-
+try:
+    helpers = helpers.helpers()
+    services = helpers.services
+except Exception as e:
+    print("Exiting with error : " + str(e))
 
 # set globals for encoder
 last_A = 1
@@ -19,11 +25,7 @@ last_gpio = 0
 
 # init  menu
 menu = None
-
-services = [
-    {"name": "Spotify", "service": "raspotify", "disable": "bt_speaker", "disable_name": "Bluetooth"},
-    {"name": "Bluetooth", "service": "bt_speaker", "disable": "raspotify", "disable_name": "Spotify"}
-]
+mode = 'raspotify'
 
 
 class BaseThread(threading.Thread):
@@ -55,7 +57,6 @@ def mcp3008_poll():
 
     print("MCP3008 thread start successfully, listening for buttons")
 
-
     while True:
         # read button states
         if 0 <= chan1.value <= 1000:
@@ -71,7 +72,7 @@ def mcp3008_poll():
         if 13000 <= chan2.value <= 14000:
             btn_press("Function")
         if 26000 <= chan2.value <= 27000:
-            btn_press ("Enter")
+            btn_press("Enter")
         if 19000 <= chan2.value <= 21000:
             btn_press("Info")
         if 39000 <= chan2.value <= 41000:
@@ -82,13 +83,18 @@ def mcp3008_poll():
             btn_press("Dimmer")
         time.sleep(0.05)
 
+
 # button callback for mcp3008
 def btn_press(btn):
     global menu
+    global mode
     # callback on button press
     if btn == "Enter":
         menu = menu.processEnter()
+    if btn  == "Info":
+        playback_status(mode, "current")
     time.sleep(0.25)
+
 
 # rotary encoder setup
 def rotary_encoder():
@@ -113,6 +119,7 @@ def rotary_encoder():
             elif gpio == Enc_B and level == 1:
                 if last_A == 1:
                     rotary_turn(clockwise=True)
+
     # setup rotary encoder in pigpio
     pi = pigpio.pi()  # init pigpio deamon
     pi.set_mode(Enc_A, pigpio.INPUT)
@@ -124,7 +131,8 @@ def rotary_encoder():
 
     print("Rotary thread start successfully, listening for turns")
 
-# rotary encooder callback
+
+# rotary encoder callback
 def rotary_turn(clockwise):
     global menu
     if clockwise == True:
@@ -132,8 +140,10 @@ def rotary_turn(clockwise):
     if clockwise == False:
         menu = menu.processUp()
 
+
 def service_enable_disable(item, action, service, name, disable, disable_name):
     global menu
+    global mode
 
     # disable any conflicting services
     if disable != None and action == 'start':
@@ -147,14 +157,19 @@ def service_enable_disable(item, action, service, name, disable, disable_name):
             menu_create(services)
             return menu.render()
 
-    disabled=0
+    disabled = 0
     # start the service if it's successful
     status = str(helpers.service(service, action))
     menu.clearDisplay()
 
+    # if starting the service is successful
     if status == "0" and action == 'start':
+        mode = service
         menu.message("%s enabled" % name)
+
+    # if disabling the service is successful
     elif status == "0" and action == 'stop':
+        mode = None
         menu.message("%s disabled" % name)
 
     # if the service failed to start, start up the conflicting service again
@@ -162,6 +177,8 @@ def service_enable_disable(item, action, service, name, disable, disable_name):
         disabled = str(helpers.service(disable, 'start'))
         if disabled != "0":
             menu.message("Failed to enable %s & %s" % name, disable_name)
+        else:
+            mode = disable
 
     else:
         menu.message("Failed to enable %s " % name)
@@ -172,27 +189,55 @@ def service_enable_disable(item, action, service, name, disable, disable_name):
     menu_create(services)
     return menu.render()
 
+
 def check_service(service):
     status = str(helpers.service(service, 'status'))
     return status
+
+def playback_status(mode, action):
+    #  status modes
+    #  current = current track
+
+    global menu
+    if mode == None:
+        menu.clearDisplay()
+        menu.message("No mode set")
+        time.sleep(2)
+        menu = None
+        menu_create(services)
+        return menu.render()
+
+    if mode == "raspotify":
+        result = helpers.spotify(action)
+        if result == None:
+            menu.clearDisplay()
+            menu_create(services)
+            return menu.render()
+        menu.clearDisplay()
+        artist = result[0]
+        track = result[1]
+        menu.message(artist + "-" + track)
+
 
 def menu_create(service_list):
     global menu
 
     menu = RpiLCDMenu(7, 8, [25, 24, 23, 15])
     menu.clearDisplay()
-
-
     menu_item = 0
 
     try:
         for i in services:
-            service=i['service']
+            service = i['service']
             if check_service(service) == "0":
-                menu_function = FunctionItem(i['name'] + " on", service_enable_disable, [menu_item, 'stop', i['service'], i['name'], i['disable'], i['disable_name']])
+                menu_function = FunctionItem(i['name'] + " on", service_enable_disable,
+                                             [menu_item, 'stop', i['service'], i['name'], i['disable'],
+                                              i['disable_name']])
                 menu.append_item(menu_function)
             else:
-                menu_function = FunctionItem(i['name'] + " off", service_enable_disable, [menu_item, 'start', i['service'], i['name'], i['disable'], i['disable_name']])
+                menu_function = FunctionItem(i['name'] + " off", service_enable_disable,
+                                             [menu_item, 'start', i['service'], i['name'], i['disable'],
+                                              i['disable_name']])
                 menu.append_item(menu_function)
     except Exception as e:
         print(e)
@@ -201,6 +246,29 @@ def menu_create(service_list):
 
 
 def main():
+
+    # move these threads out of here if theres a problem with controls
+    # mcp3008 on BaseThread with callback
+    mcp3008_thread = BaseThread(
+        name='mcp3008',
+        target=mcp3008_poll
+        # callback=btn_press,
+        # callback_args="Enter"
+    )
+
+    # start mcp3008 thread
+    mcp3008_thread.start()
+
+    rotary_encoder_thread = BaseThread(
+        name='rotary_encoder',
+        target=rotary_encoder
+        # callback=rotary_turn,
+        # callback_args=("direction")
+    )
+
+    # start rotary encoder thread
+    rotary_encoder_thread.start()
+
     global menu
 
     # create intial menu
@@ -212,31 +280,8 @@ def main():
 
     input("Loaded")
 
-# mcp3008 on BaseThread with callback
-mcp3008_thread = BaseThread(
-    name='mcp3008',
-    target=mcp3008_poll
-    # callback=btn_press,
-    # callback_args="Enter"
-)
 
-# start mcp3008 thread
-mcp3008_thread.start()
 
-rotary_encoder_thread = BaseThread(
-    name='rotary_encoder',
-    target=rotary_encoder
-    # callback=rotary_turn,
-    # callback_args=("direction")
-)
-
-# start rotary encoder thread
-rotary_encoder_thread.start()
-
-try:
-    helpers.spotify()
-except:
-    print("Spotify failed to inititalise")
 
 if __name__ == "__main__":
     main()

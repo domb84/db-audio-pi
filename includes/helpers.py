@@ -1,22 +1,27 @@
+import ast
 import configparser
-
-import spotipy
-import spotipy.oauth2
-
 import os
 import subprocess
 
+import spotipy
+import spotipy.oauth2
+from spotipy.oauth2 import SpotifyOAuth
 
-class helpers ():
+import json
+
+
+class helpers():
 
     def __init__(self):
         self.kill = False
         self.config_path = "db_audio_pi.conf"
         self.config = self.configparser(self.config_path)
         try:
-            self.device = self.config['DEFAULT']['DEVICE']
-            self.id = self.config['DEFAULT']['ID']
-            self.secret = self.config['DEFAULT']['SECRET']
+            self.services = ast.literal_eval(self.config['DEFAULT']['SERVICES'])
+            self.DEVICE = self.config['DEFAULT']['DEVICE']
+            self.SPOTIPY_CLIENT_ID = self.config['SPOTIFY']['ID']
+            self.SPOTIPY_CLIENT_SECRET = self.config['SPOTIFY']['SECRET']
+            self.SPOTIPY_REDIRECT_URI = self.config['SPOTIFY']['REDIRECT_URI']
         except:
             print("Variables not missing from conf")
 
@@ -38,76 +43,67 @@ class helpers ():
     def exitSubMenu(self, submenu):
         return submenu.exit()
 
-
     def service(self, service, action):
         try:
             if action == "start":
                 return_code = subprocess.call(['sudo', 'systemctl', action, service, '--quiet'])
-                return(return_code)
+                return (return_code)
             elif action == "stop":
                 return_code = subprocess.call(['sudo', 'systemctl', action, service, '--quiet'])
-                return(return_code)
+                return (return_code)
             elif action == "status":
                 return_code = subprocess.call(['sudo', 'systemctl', 'is-active', '--quiet', service])
-                return(return_code)
+                return (return_code)
         except:
             return ("1")
-
 
     def power(self, action):
         if action == "shutdown":
             return_code = subprocess.call(['sudo', 'shutdown', '-h', 'now'])
 
 
-    def spotify(self, device=None, id=None, secret=None):
-        # spotify controls setup
-        if not device:
-            if not id:
-                if not secret:
-                    try:
-                        self.device = self.config['DEFAULT']['DEVICE']
-                        self.id = self.config['DEFAULT']['ID']
-                        self.secret = self.config['DEFAULT']['SECRET']
-                    except:
-                        return['error']
-        pi_device_id = self.device
-        my_client_id = self.id
-        my_client_secret = self.secret
-        my_redirect_uri = 'https://example.com'
-        my_scope = 'streaming user-read-currently-playing user-read-playback-state'
-        refreshToken = ''
-        auth = spotipy.oauth2.SpotifyOAuth(client_id=my_client_id, client_secret=my_client_secret,
-                                           redirect_uri=my_redirect_uri, scope=my_scope)
-        def refreshAccessToken():
-            global accessTokenInfo, accessToken, spotify
-            accessTokenInfo = auth.refresh_access_token(refreshToken)
-            accessToken = accessTokenInfo['access_token']
-            spotify = spotipy.Spotify(accessToken)
+    def spotify(self, action):
+        scope = "user-library-read user-read-playback-state"
 
-        refreshAccessToken()
+        try:
+            sp_oauth = SpotifyOAuth(open_browser=False, client_id=self.SPOTIPY_CLIENT_ID,
+                                    client_secret=self.SPOTIPY_CLIENT_SECRET, redirect_uri=self.SPOTIPY_REDIRECT_URI,
+                                    scope=scope, cache_path="cache")
+            token_info = sp_oauth.get_cached_token()
+            token = token_info['access_token']
 
-        # wrapper for refreshing token - should make sure 'action' can be run partially then fully without any issues
-        def spotifyAction(action, description):
-            try:  # in case of failure (eg. wifi off, no song playing), don't do anything
-                action()
+            if not token_info:
+                auth_url = sp_oauth.get_authorize_url()
+                print(auth_url)
+                response = input('Paste the above link into your browser, then paste the redirect url here: ')
+                code = sp_oauth.parse_response_code(response)
+                token_info = sp_oauth.get_access_token(code)
+                token = token_info['access_token']
+
+            sp = spotipy.Spotify(auth=token)
+
+        except Exception as e:
+            print("Cannot initialise Spotify information")
+
+        def refresh():
+            try:
+                global token_info, sp
+                if sp_oauth.is_token_expired(token_info):
+                    token_info = sp_oauth.refresh_access_token(token_info['refresh_token'])
+                    token = token_info['access_token']
+                    sp = spotipy.Spotify(auth=token)
             except Exception as e:
-                print('Failed to ' + description + ': ' + str(e))
-                if spotipy.oauth2.is_token_expired(accessTokenInfo):
-                    refreshAccessToken()
-                    spotifyAction(action, description)
+                print("Refreshing token failed")
 
-        def playPauseAction():
-            isOnPi = (d for d in spotify.devices()['devices'] if d['id'] == pi_device_id).next()['is_active']
-            if not isOnPi:
-                spotify.transfer_playback(pi_device_id)
-            else:
-                isPlaying = spotify.current_user_playing_track()[u'is_playing']
-                spotify.pause_playback() if isPlaying else spotify.start_playback()
+        def current_playing():
+            try:
+                result = sp.current_user_playing_track()
+                artist = result['item']['artists'][0]['name']
+                track_name = result['item']['name']
+                return [artist, track_name]
+            except Exception as e:
+                print(e)
+                return None
 
-        playPause = lambda: spotifyAction(playPauseAction, 'play/pause')
-        nextTrack = lambda: spotifyAction(spotify.next_track, 'go to next track')
-        prevTrack = lambda: spotifyAction(spotify.previous_track, 'go to previous track')
-        impossibleSoul = lambda: spotifyAction(seqComp(
-            [lambda: spotify.start_playback(uris=['spotify:track:5CLs0uFRmU0U9VcnsI6jwv']),
-             lambda: spotify.seek_track(765000), lambda: spotify.transfer_playback(pi_device_id)]), 'get hype')
-
+        if action == "current":
+            return current_playing()
