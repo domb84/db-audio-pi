@@ -26,6 +26,7 @@ last_gpio = 0
 # init  menu
 menu = None
 mode = 'raspotify'
+count = 0
 
 
 class BaseThread(threading.Thread):
@@ -94,6 +95,8 @@ def btn_press(btn):
     if btn  == "Info":
         playback_status(mode, "current")
     time.sleep(0.25)
+    print(menu)
+
 
 
 # rotary encoder setup
@@ -139,55 +142,63 @@ def rotary_turn(clockwise):
         menu = menu.processDown()
     if clockwise == False:
         menu = menu.processUp()
+    print(menu)
 
 
-def service_enable_disable(item, action, service, name, disable, disable_name):
+
+def service_manager(item, action, name, services):
+
     global menu
     global mode
 
-    # disable any conflicting services
-    if disable != None and action == 'start':
-        disabled = str(helpers.service(disable, 'stop'))
-        # if it fails to disable the conflicting service, just exit
-        if disabled == "1":
-            menu.clearDisplay()
-            menu.message("Failed to disable %s" % disable_name)
-            time.sleep(2)
-            menu = None
-            menu_create(services)
-            return menu.render()
+    failed = []
 
-    disabled = 0
-    # start the service if it's successful
-    status = str(helpers.service(service, action))
-    menu.clearDisplay()
+    service = None
 
-    # if starting the service is successful
-    if status == "0" and action == 'start':
-        mode = service
-        menu.message("%s enabled" % name)
+    # get the service name you wish to action
+    for i in services:
+        for k, v in i.items():
+            n = v['name']
+            s = v['details']['service']
+            d = v['details']['dependancies']
+            if n == name:
+                service = s
 
-    # if disabling the service is successful
-    elif status == "0" and action == 'stop':
-        mode = None
-        menu.message("%s disabled" % name)
+    # stop all other services if you're starting another
+    if action == 'start':
+        for i in services:
+            for k,v in i.items():
+                n2 = v['name']
+                s2 = v['details']['service']
+                d2 = v['details']['dependancies']
+                if n2 == name:
+                    pass
+                else:
+                    status = str(helpers.service(s2, 'stop'))
+                    if status == "1":
+                        failed =+ n2
 
-    # if the service failed to start, start up the conflicting service again
-    elif disabled != "1" and status != "0":
-        disabled = str(helpers.service(disable, 'start'))
-        if disabled != "0":
-            menu.message("Failed to enable %s & %s" % name, disable_name)
+    print(failed)
+    # show error message on failure
+    if len(failed) > 0:
+        display_message("Failed to stop %s services" % failed)
+
+    elif service != None:
+        # proceed with other action if theres no failures
+        status = str(helpers.service(service, action))
+        # if starting the service is successful
+        if status == "0" and action == 'start':
+            mode = service
+            display_message("%s enabled" % name)
+        elif status == "0" and action == 'stop':
+            mode = None
+            display_message("%s disabled" % name)
+        elif status == "0":
+            display_message("%s processed" % name)
         else:
-            mode = disable
+            display_message("Failed to process %s " % name)
+    return menu_create(services)
 
-    else:
-        menu.message("Failed to enable %s " % name)
-
-    time.sleep(2)
-
-    menu = None
-    menu_create(services)
-    return menu.render()
 
 
 def check_service(service):
@@ -197,55 +208,70 @@ def check_service(service):
 def playback_status(mode, action):
     #  status modes
     #  current = current track
-
-    global menu
     if mode == None:
-        menu.clearDisplay()
-        menu.message("No mode set")
-        time.sleep(2)
-        menu = None
-        menu_create(services)
-        return menu.render()
+        display_message("No mode set")
 
     if mode == "raspotify":
         result = helpers.spotify(action)
         if result == None:
-            menu.clearDisplay()
-            menu_create(services)
-            return menu.render()
-        menu.clearDisplay()
-        artist = result[0]
-        track = result[1]
-        menu.message(artist + "-" + track)
+            display_message("No track playing")
+        else:
+            artist = result[0]
+            track = result[1]
+            display_message(artist + "-" + track)
 
-
-def menu_create(service_list):
+def display_message(message):
     global menu
-
-    menu = RpiLCDMenu(7, 8, [25, 24, 23, 15])
     menu.clearDisplay()
-    menu_item = 0
+    menu.message(message)
+    time.sleep(2)
+    print("message displayed" + str(menu))
+    return
+
+def menu_create(services):
+    print ("Creating menu")
+    global menu
+    global mode
+
+    if menu == None:
+        print("init menu")
+        menu = RpiLCDMenu(7, 8, [25, 24, 23, 15])
+        print("menu created from none " + str(menu))
+    if menu != None:
+        print("re-init menu")
+        menu = RpiLCDMenu(7, 8, [25, 24, 23, 15])
+        print("menu set to none and re-created " + str(menu))
+
+    menu_item = 1
 
     try:
         for i in services:
-            service = i['service']
-            if check_service(service) == "0":
-                menu_function = FunctionItem(i['name'] + " on", service_enable_disable,
-                                             [menu_item, 'stop', i['service'], i['name'], i['disable'],
-                                              i['disable_name']])
-                menu.append_item(menu_function)
-            else:
-                menu_function = FunctionItem(i['name'] + " off", service_enable_disable,
-                                             [menu_item, 'start', i['service'], i['name'], i['disable'],
-                                              i['disable_name']])
-                menu.append_item(menu_function)
+            for k,v in i.items():
+                name = v['name']
+                service = v['details']['service']
+                dependancies = v['details']['dependancies']
+                if check_service(service) == "0":
+                    menu_function = FunctionItem(name + " on", service_manager,
+                                                 [menu_item, 'stop', name, services])
+                    menu.append_item(menu_function)
+                else:
+                    menu_function = FunctionItem(name + " off", service_manager,
+                                                 [menu_item, 'start', name, services])
+                    menu.append_item(menu_function)
+                menu_item =+ 1
+        print(str(menu_item) +  " items created")
     except Exception as e:
         print(e)
+    print("menu items added" + str(menu))
+    menu.start()
+    menu.debug()
 
-    return
+    return menu.render()
 
 
 def main():
+
+    global menu
 
     # move these threads out of here if theres a problem with controls
     # mcp3008 on BaseThread with callback
@@ -269,14 +295,8 @@ def main():
     # start rotary encoder thread
     rotary_encoder_thread.start()
 
-    global menu
-
-    # create intial menu
-    menu_create(services)
-
-    # start menu
-    menu.start()
-    menu.debug()
+    if menu == None:
+        menu_create(services)
 
     input("Loaded")
 
