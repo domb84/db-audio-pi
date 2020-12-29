@@ -293,6 +293,15 @@ def playback_status(mode, action):
             track = result[1]
             display_message(artist + "-" + track)
 
+    if mode == "shairport-sync":
+        result = helpers.airplay(action)
+        if result == None:
+            display_message("No track playing")
+        else:
+            artist = result[0]
+            track = result[1]
+            display_message(artist + "-" + track)
+
 
 
 def display_message(message):

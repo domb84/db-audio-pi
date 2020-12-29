@@ -7,7 +7,8 @@ import spotipy
 import spotipy.oauth2
 from spotipy.oauth2 import SpotifyOAuth
 import sys
-
+from shairportmetadatareader import AirplayUDPListener, AirplayPipeListener
+from time import sleep
 
 class helpers():
 
@@ -150,6 +151,24 @@ class helpers():
         if action == "current":
             return current_playing_bt()
 
+    def airplay(self, action):
+        def current_playing_airplay(lis, info):
+            """
+            Print the current track information.
+            :param lis: listener instance
+            :param info: track information
+            """
+            print(info)
+
+        # listener = AirplayUDPListener()  # You can use AirplayPipeListener or AirplayMQTTListener
+        listener = AirplayPipeListener()
+        listener.bind(track_info=current_playing_airplay)  # receive callbacks for metadata changes
+        listener.start_listening()  # read the data asynchronously from the udp server
+        sleep(60)  # receive data for 60 seconds
+        listener.stop_listening()
+
+        if action == "current":
+            return current_playing_airplay()
 
 
     class app_shutdown:
