@@ -7,13 +7,13 @@ import spotipy
 import spotipy.oauth2
 from spotipy.oauth2 import SpotifyOAuth
 import sys
-from shairportmetadatareader import AirplayUDPListener, AirplayPipeListener
 from time import sleep
+from shairportmetadatareader import AirplayPipeListener
 
-class helpers():
+
+class helpers:
 
     def __init__(self):
-        # self.kill = False
         self.config_path = "db_audio_pi.conf"
         self.config = self.configparser(self.config_path)
         try:
@@ -35,6 +35,7 @@ class helpers():
         return self.config
 
     def fooFunction(self, item_index):
+
         """
         sample method with a parameter
         """
@@ -151,8 +152,9 @@ class helpers():
         if action == "current":
             return current_playing_bt()
 
-    def airplay(self, action):
-        def current_playing_airplay(lis, info):
+
+    def airplay(self):
+        def on_track_info(lis, info):
             """
             Print the current track information.
             :param lis: listener instance
@@ -160,15 +162,11 @@ class helpers():
             """
             print(info)
 
-        # listener = AirplayUDPListener()  # You can use AirplayPipeListener or AirplayMQTTListener
-        listener = AirplayPipeListener()
-        listener.bind(track_info=current_playing_airplay)  # receive callbacks for metadata changes
+        listener = AirplayPipeListener()  # You can use AirplayPipeListener or AirplayMQTTListener
+        listener.bind(track_info=on_track_info)  # receive callbacks for metadata changes
         listener.start_listening()  # read the data asynchronously from the udp server
         sleep(60)  # receive data for 60 seconds
         listener.stop_listening()
-
-        if action == "current":
-            return current_playing_airplay()
 
 
     class app_shutdown:
@@ -183,6 +181,7 @@ class helpers():
             # global kill
             # kill = True
             try:
+
                 sys.exit(0)
             except SystemExit:
                 os._exit(0)

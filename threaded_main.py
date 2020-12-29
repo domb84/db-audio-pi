@@ -1,4 +1,4 @@
-import threading
+import threading, _thread
 import atexit
 import adafruit_bitbangio as bitbangio
 import adafruit_mcp3xxx.mcp3008 as MCP
@@ -28,7 +28,7 @@ last_gpio = 0
 
 # init  menu
 menu = None
-mode = 'raspotify'
+mode = None
 count = 0
 
 class BaseThread(threading.Thread):
@@ -64,27 +64,31 @@ def mcp3008_poll():
         # read button states
         if 0 <= chan1.value <= 1000:
             btn_press("Timer")
-        if 5900 <= chan1.value <= 7000:
+        elif 5000 <= chan1.value <= 9000:
             btn_press("Time Adj")
-        if 12000 <= chan1.value <= 13000:
+        elif 12000 <= chan1.value <= 15000:
             btn_press("Daily")
-        if 0 <= chan2.value <= 1000:
+        elif 0 <= chan2.value <= 1000:
             btn_press("Power")
-        if 5800 <= chan2.value <= 6100:
+        elif 4000 <= chan2.value <= 9000:
             btn_press("Band")
-        if 13000 <= chan2.value <= 14000:
+        elif 11000 <= chan2.value <= 16000:
             btn_press("Function")
-        if 26000 <= chan2.value <= 27000:
+        elif 26000 <= chan2.value <= 28000:
             btn_press("Enter")
-        if 19000 <= chan2.value <= 21000:
+        elif 19000 <= chan2.value <= 22000:
             btn_press("Info")
-        if 39000 <= chan2.value <= 41000:
+        elif 39000 <= chan2.value <= 41000:
             btn_press("Auto Tuning")
-        if 33000 <= chan2.value <= 34000:
+        elif 32000 <= chan2.value <= 34000:
             btn_press("Memory")
-        if 44000 <= chan2.value <= 46000:
+        elif 44000 <= chan2.value <= 48000:
             btn_press("Dimmer")
-        time.sleep(0.05)
+        elif chan1.value <= 64000:
+            print("Uncaught press on Channel 1 %s" % chan1.value)
+        elif chan2.value <= 64000:
+            print("Uncaught press on  Channel 2 %s" % chan2.value)
+        time.sleep(0.1)
 
 
 # button callback for mcp3008
@@ -102,6 +106,8 @@ def btn_press(btn):
         menu = menu.processUp()
     if  btn == "Band":
         menu = menu.processDown()
+    if btn  == "Power":
+        _thread.interrupt_main()
     time.sleep(0.25)
     return
 
@@ -110,6 +116,7 @@ def btn_press(btn):
 # rotary encoder setup
 def rotary_encoder():
     # setup rotary encoder variables for pigpio
+    # BE SURE TO START PIGPIO IN PWM MODE "t -0"
     Enc_A = 17  # Encoder input A: input GPIO 17
     Enc_B = 27  # Encoder input B: input GPIO 27
 
@@ -143,6 +150,8 @@ def rotary_encoder():
     print("Rotary thread start successfully, listening for turns")
 
 def rotary_encoder_2():
+    # backup function for encoder with standard GPIO. Does not work well at all.
+
     clk = 17
     dt = 27
 
@@ -168,6 +177,7 @@ def rotary_encoder_2():
                     rotary_turn(False)
                     counter -= 1
             clkLastState = clkState
+            sleep(0.1)
     finally:
         GPIO.cleanup()
 
@@ -179,7 +189,6 @@ def rotary_turn(clockwise):
     if clockwise == False:
         menu = menu.processUp()
     return
-
 
 
 def service_manager(item, action, name, service_list):
@@ -244,14 +253,15 @@ def service_manager(item, action, name, service_list):
 
     # show error message on failure
     if len(failed) > 0:
-        display_message("Failed to stop or start %s services" % failed)
+        for i in failed:
+            display_message("Failed to stop or start %s service" % i)
 
     elif service != None:
         # proceed with other action if theres no failures
         status = str(helpers.service(service, action))
         # if starting the service is successful
         if status == "0" and action == 'start':
-            mode = service
+            mode = name
             display_message("%s enabled" % name)
         elif status == "0" and action == 'stop':
             mode = None
@@ -275,7 +285,7 @@ def playback_status(mode, action):
     if mode == None:
         display_message("No mode set")
 
-    if mode == "raspotify":
+    if mode == "spotify":
         result = helpers.spotify(action)
         if result == None:
             display_message("No track playing")
@@ -284,7 +294,7 @@ def playback_status(mode, action):
             track = result[1]
             display_message(artist + "-" + track)
 
-    if mode == "bt_speaker":
+    if mode == "bluetooth":
         result = helpers.bt_speaker(action)
         if result == None:
             display_message("No track playing")
@@ -293,29 +303,24 @@ def playback_status(mode, action):
             track = result[1]
             display_message(artist + "-" + track)
 
-    if mode == "shairport-sync":
-        result = helpers.airplay(action)
-        if result == None:
-            display_message("No track playing")
-        else:
-            artist = result[0]
-            track = result[1]
-            display_message(artist + "-" + track)
+    if mode == "airplay":
+        return
 
-
-
-def display_message(message):
+def display_message(message, clear=None):
     global menu
+
     if menu!=None:
         menu.clearDisplay()
         menu.message(message.upper())
         time.sleep(2)
-        print(menu)
-        return menu.render()
+        if clear != None:
+            return menu.clearDisplay()
+        else:
+            return menu.render()
     return
 
 def menu_create(services):
-    print ("Creating menu")
+    # print ("Creating menu")
     global menu
     global mode
 
@@ -349,13 +354,13 @@ def menu_create(services):
     except Exception as e:
         print(e)
     menu.start()
-    menu.debug()
+    # menu.debug()
     return menu.render()
 
 
 def main():
 
-    global menu, default_service, services
+    global menu, default_service, services, mode
 
     # move these threads out of here if theres a problem with controls
     # mcp3008 on BaseThread with callback
@@ -371,7 +376,7 @@ def main():
 
     rotary_encoder_thread = BaseThread(
         name='rotary_encoder',
-        target=rotary_encoder_2
+        target=rotary_encoder
         # callback=rotary_turn,
         # callback_args=("direction")
     )
@@ -382,17 +387,23 @@ def main():
 
     if menu == None:
         if default_service:
-            service_manager(0, 'start', default_service, services)
+            service_manager(None, 'start', default_service, services)
         menu_create(services)
 
+    currentmode = mode
+    print(("Boot mode is %s" % currentmode))
 
-    input("Loaded")
+    while True:
+        if currentmode != mode:
+            currentmode = mode
+            print(("Mode has changed to %s" % currentmode))
+        sleep(1)
 
 
 if __name__ == "__main__":
     try:
         main()
     except KeyboardInterrupt:
-        service_manager(None, 'stop-all', None , services)
-        display_message("Bye!")
+        service_manager(None, 'stop-all', None, services)
+        display_message("Bye!", 'clear')
         helpers.app_shutdown().shutdown_app()
