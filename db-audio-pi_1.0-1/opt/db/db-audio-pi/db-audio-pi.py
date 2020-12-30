@@ -1,4 +1,5 @@
 import _thread
+import ast
 import threading
 import time
 from time import sleep
@@ -7,30 +8,52 @@ import adafruit_bitbangio as bitbangio
 import adafruit_mcp3xxx.mcp3008 as MCP
 import board
 import digitalio
+import includes.helpers as helpers
+import includes.spotify as spotify
 import pigpio
 from RPi import GPIO
 from adafruit_mcp3xxx.analog_in import AnalogIn
 from rpilcdmenu import *
 from rpilcdmenu.items import *
 
-import includes.helpers as helpers
-
 try:
-    helpers = helpers.helpers()
-    services = helpers.SERVICES
-    default_service = helpers.DEFAULT_SERVICE
+
+    tools = helpers.tools()
+    # init config
+    config_path = 'db-audio-pi.conf'
+    config = tools.configparser(config_path)
+    try:
+        services = ast.literal_eval(config['DEFAULT']['SERVICES'])
+        DEVICE = config['DEFAULT']['DEVICE']
+        SPOTIPY_CLIENT_ID = config['SPOTIFY']['ID']
+        SPOTIPY_CLIENT_SECRET = config['SPOTIFY']['SECRET']
+        SPOTIPY_REDIRECT_URI = config['SPOTIFY']['REDIRECT_URI']
+        default_service = config['DEFAULT']['DEFAULT_SERVICE']
+    except:
+        print("Variables missing from conf")
+        exit(1)
+
+    spotify = spotify.spotify(SPOTIPY_CLIENT_ID, SPOTIPY_CLIENT_SECRET, SPOTIPY_REDIRECT_URI)
+
 except Exception as e:
     print("Exiting with error : " + str(e))
+    exit(1)
 
 # set globals for encoder
 last_A = 1
 last_B = 1
 last_gpio = 0
 
-# init  menu
+# set globals
 menu = None
 mode = None
-count = 0
+menu_accessed = True
+counter = 0
+track_changed = True
+
+
+# services = helpers.SERVICES
+# default_service = helpers.DEFAULT_SERVICE
 
 
 class BaseThread(threading.Thread):
@@ -95,8 +118,7 @@ def mcp3008_poll():
 
 # button callback for mcp3008
 def btn_press(btn):
-    global menu
-    global mode
+    global menu, mode, menu_accessed
     # callback on button press
     if btn == "Enter":
         menu = menu.processEnter()
@@ -111,6 +133,7 @@ def btn_press(btn):
     if btn == "Power":
         # kill main thread from spawned threads
         _thread.interrupt_main()
+    menu_accessed = True
     time.sleep(0.25)
     return
 
@@ -187,11 +210,12 @@ def rotary_encoder_2():
 
 # rotary encoder callback
 def rotary_turn(clockwise):
-    global menu
+    global menu, menu_accessed
     if clockwise == True:
         menu = menu.processDown()
     if clockwise == False:
         menu = menu.processUp()
+    menu_accessed = True
     return
 
 
@@ -224,7 +248,7 @@ def service_manager(item, action, name, service_list):
                 if n2 == name:
                     pass
                 else:
-                    status = str(helpers.service(s2, 'stop'))
+                    status = str(tools.service(s2, 'stop'))
                     if status == "1":
                         failed.append(n2)
                     for i in d2:
@@ -233,7 +257,7 @@ def service_manager(item, action, name, service_list):
                         d_on_action = d2[i]['on_action']
                         d_action = d2[i]['action']
                         if d_on_action == 'stop':
-                            d_status = str(helpers.service(d_service, d_action))
+                            d_status = str(tools.service(d_service, d_action))
                             if d_status == "1" and d_action != 'disable':
                                 failed.append(d_service)
             # start the service dependenices
@@ -249,7 +273,7 @@ def service_manager(item, action, name, service_list):
                         d_on_action = d3[i]['on_action']
                         d_action = d3[i]['action']
                         if d_on_action == 'start':
-                            d_status = str(helpers.service(d_service, d_action))
+                            d_status = str(tools.service(d_service, d_action))
                             if d_status == "1" and d_action != 'disable':
                                 failed.append(d_service)
 
@@ -260,7 +284,7 @@ def service_manager(item, action, name, service_list):
 
     elif service != None:
         # proceed with other action if theres no failures
-        status = str(helpers.service(service, action))
+        status = str(tools.service(service, action))
         # if starting the service is successful
         if status == "0" and action == 'start':
             mode = name
@@ -279,47 +303,64 @@ def service_manager(item, action, name, service_list):
 
 
 def check_service(service):
-    status = str(helpers.service(service, 'status'))
+    status = str(tools.service(service, 'status'))
     return status
 
 
-def playback_status(mode, action):
+def playback_status(mode, action, static=False):
     #  status modes
     #  current = current track
     if mode == None:
-        display_message("No mode set")
+        if static:
+            display_message("No mode set", static=True)
+        else:
+            display_message("No mode set", static=True)
 
     if mode == "spotify":
-        result = helpers.spotify(action)
+        result = spotify.current_playing_spotify()
         if result == None:
-            display_message("No track playing")
+            if static:
+                display_message("No track playing", static=True)
+            else:
+                display_message("No track playing")
         else:
             artist = result[0]
             track = result[1]
-            display_message(artist + "-" + track)
+            if static:
+                display_message(artist + "-" + track, static=True)
+            else:
+                display_message(artist + "-" + track)
 
     if mode == "bluetooth":
-        result = helpers.bt_speaker(action)
+        result = tools.bt_speaker(action)
         if result == None:
-            display_message("No track playing")
+            if static:
+                display_message("No track playing", static=True)
+            else:
+                display_message("No track playing")
         else:
             artist = result[0]
             track = result[1]
-            display_message(artist + "-" + track)
+            if static:
+                display_message(artist + "-" + track, static=True)
+            else:
+                display_message(artist + "-" + track)
 
     if mode == "airplay":
         return
 
 
-def display_message(message, clear=None):
+def display_message(message, clear=False, static=False):
     global menu
 
     if menu != None:
         menu.clearDisplay()
         menu.message(message.upper())
         time.sleep(2)
-        if clear != None:
+        if clear == True:
             return menu.clearDisplay()
+        elif static == True:
+            return
         else:
             return menu.render()
     return
@@ -364,9 +405,8 @@ def menu_create(services):
     return menu.render()
 
 
-
 def main():
-    global menu, default_service, services, mode
+    global menu, default_service, services, mode, menu_accessed, counter, track_changed
 
     # move these threads out of here if theres a problem with controls
     # mcp3008 on BaseThread with callback
@@ -400,10 +440,26 @@ def main():
     print(("Boot mode is %s" % currentmode))
 
     while True:
+        # check for mode change
         if currentmode != mode:
             currentmode = mode
             print(("Mode has changed to %s" % currentmode))
-        sleep(1)
+
+        # check for menu access
+        if menu_accessed == True:
+            counter += 1
+        elif track_changed == True and menu_accessed == False:
+            playback_status(currentmode, 'current', static=True)
+
+        # print(counter)
+        if counter == 10:
+            menu_accessed = False
+            counter = 0
+
+        if counter > 0:
+            sleep(1)
+        else:
+            sleep(5)
 
 
 if __name__ == "__main__":
@@ -411,5 +467,5 @@ if __name__ == "__main__":
         main()
     except:
         service_manager(None, 'stop-all', None, services)
-        display_message("Bye!", 'clear')
-        helpers.app_shutdown().shutdown_app()
+        display_message("Bye!", clear=True)
+        tools.app_shutdown().shutdown_app()
