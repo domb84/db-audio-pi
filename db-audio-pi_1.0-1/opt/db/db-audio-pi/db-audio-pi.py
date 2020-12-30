@@ -426,7 +426,7 @@ def change(track):
     if menu_accessed == False:
         artist = track[0]
         title = track[1]
-        display_message("title, artist", static=True)
+        display_message(("%s - %s" % (title, artist)), static=True)
         track_changed = False
 
 
