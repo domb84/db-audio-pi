@@ -6,7 +6,7 @@ After=network.target
 User=root
 Group=root
 WorkingDirectory=/opt/db/db-audio-pi/
-ExecStart=/bin/python3 /opt/db/db-audio-pi/db-audio-pi.py
+ExecStart=/usr/bin/python3 /opt/db/db-audio-pi/db-audio-pi.py
 Restart=always
 RestartSec=3
 
