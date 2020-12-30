@@ -1,20 +1,23 @@
 import ast
 import configparser
 import os
-from subprocess import Popen, PIPE, call
 import signal
+import sys
+from subprocess import Popen, PIPE, call
+from time import sleep
+
 import spotipy
 import spotipy.oauth2
-from spotipy.oauth2 import SpotifyOAuth
-import sys
-from time import sleep
 from shairportmetadatareader import AirplayPipeListener
+from spotipy.oauth2 import SpotifyOAuth
+
+kill = False
 
 
 class helpers:
 
     def __init__(self):
-        self.config_path = "db_audio_pi.conf"
+        self.config_path = "db-audio-pi.conf"
         self.config = self.configparser(self.config_path)
         try:
             self.SERVICES = ast.literal_eval(self.config['DEFAULT']['SERVICES'])
@@ -63,7 +66,7 @@ class helpers:
                 return_code = call(['sudo', 'systemctl', 'is-active', '--quiet', service])
                 return (return_code)
             elif action == "kill":
-                check = Popen(['sudo', 'pgrep', '-c', service],stdout=PIPE)
+                check = Popen(['sudo', 'pgrep', '-c', service], stdout=PIPE)
                 output, err = check.communicate()
                 rc = check.returncode
                 # strip 'b' and line breaks from output
@@ -84,7 +87,6 @@ class helpers:
     def power(self, action):
         if action == "shutdown":
             return_code = call(['sudo', 'shutdown', '-h', 'now'])
-
 
     def spotify(self, action):
         scope = "user-library-read user-read-playback-state"
@@ -152,7 +154,6 @@ class helpers:
         if action == "current":
             return current_playing_bt()
 
-
     def airplay(self):
         def on_track_info(lis, info):
             """
@@ -168,7 +169,6 @@ class helpers:
         sleep(60)  # receive data for 60 seconds
         listener.stop_listening()
 
-
     class app_shutdown:
         def _init_(self):
             signal.signal(signal.SIGINT, self.exit_gracefully)
@@ -178,10 +178,9 @@ class helpers:
             self.shutdown_app()
 
         def shutdown_app(self):
-            # global kill
-            # kill = True
+            global kill
+            kill = True
             try:
-
                 sys.exit(0)
             except SystemExit:
                 os._exit(0)

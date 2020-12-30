@@ -1,0 +1,9 @@
+Package: db-audio-pi
+Version: 1.0-1
+Section: base
+Priority: optional
+Architecture: arm
+Depends: python (>= 3.7.3), anotherDependency (>= 1.2.6)
+Maintainer: Dominic Bird <dominic@dominicbird.com>
+Description: DB Audio Pi
+ Python project to control a TEAC tuner

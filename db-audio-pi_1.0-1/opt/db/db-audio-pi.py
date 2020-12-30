@@ -1,16 +1,17 @@
-import threading, _thread
-import atexit
+import _thread
+import threading
+import time
+from time import sleep
+
 import adafruit_bitbangio as bitbangio
 import adafruit_mcp3xxx.mcp3008 as MCP
 import board
 import digitalio
 import pigpio
-import time
+from RPi import GPIO
 from adafruit_mcp3xxx.analog_in import AnalogIn
 from rpilcdmenu import *
 from rpilcdmenu.items import *
-from RPi import GPIO
-from time import sleep
 
 import includes.helpers as helpers
 
@@ -30,6 +31,7 @@ last_gpio = 0
 menu = None
 mode = None
 count = 0
+
 
 class BaseThread(threading.Thread):
     def __init__(self, callback=None, callback_args=None, *args, **kwargs):
@@ -67,7 +69,7 @@ def mcp3008_poll():
         elif 5000 <= chan1.value <= 9000:
             btn_press("Time Adj")
         elif 12000 <= chan1.value <= 15000:
-            btn_press("Daily")
+            btn_press("Daily","Daily")
         elif 0 <= chan2.value <= 1000:
             btn_press("Power")
         elif 4000 <= chan2.value <= 9000:
@@ -100,17 +102,17 @@ def btn_press(btn):
         menu = menu.processEnter()
     if btn == "Auto Tuning":
         menu = menu.processEnter()
-    if btn  == "Info":
+    if btn == "Info":
         playback_status(mode, "current")
     if btn == "Function":
         menu = menu.processUp()
-    if  btn == "Band":
+    if btn == "Band":
         menu = menu.processDown()
-    if btn  == "Power":
+    if btn == "Power":
+        # kill main thread from spawned threads
         _thread.interrupt_main()
     time.sleep(0.25)
     return
-
 
 
 # rotary encoder setup
@@ -149,6 +151,7 @@ def rotary_encoder():
 
     print("Rotary thread start successfully, listening for turns")
 
+
 def rotary_encoder_2():
     # backup function for encoder with standard GPIO. Does not work well at all.
 
@@ -181,6 +184,7 @@ def rotary_encoder_2():
     finally:
         GPIO.cleanup()
 
+
 # rotary encoder callback
 def rotary_turn(clockwise):
     global menu
@@ -192,7 +196,6 @@ def rotary_turn(clockwise):
 
 
 def service_manager(item, action, name, service_list):
-
     global menu
     global mode
 
@@ -208,14 +211,13 @@ def service_manager(item, action, name, service_list):
             if n == name:
                 service = s
 
-
     # print("service is " + str(service))
     # stop all other services if you're starting another, then start the dependencies we need
-    if action == 'start' and service !=None or action == 'stop-all' and name == None:
+    if action == 'start' and service != None or action == 'stop-all' and name == None:
         # read all service items except the one you're starting and stop them and their dependencies
         # or stop all services
         for i in service_list:
-            for k,v in i.items():
+            for k, v in i.items():
                 n2 = v['name']
                 s2 = v['details']['service']
                 d2 = v['details']['dependancies']
@@ -236,7 +238,7 @@ def service_manager(item, action, name, service_list):
                                 failed.append(d_service)
             # start the service dependenices
         for i in service_list:
-            for k,v in i.items():
+            for k, v in i.items():
                 n3 = v['name']
                 s3 = v['details']['service']
                 d3 = v['details']['dependancies']
@@ -271,13 +273,15 @@ def service_manager(item, action, name, service_list):
         else:
             display_message("Failed to process %s " % name)
 
-    if menu!=None:
+    if menu != None:
         return menu_create(service_list)
     return
+
 
 def check_service(service):
     status = str(helpers.service(service, 'status'))
     return status
+
 
 def playback_status(mode, action):
     #  status modes
@@ -306,10 +310,11 @@ def playback_status(mode, action):
     if mode == "airplay":
         return
 
+
 def display_message(message, clear=None):
     global menu
 
-    if menu!=None:
+    if menu != None:
         menu.clearDisplay()
         menu.message(message.upper())
         time.sleep(2)
@@ -318,6 +323,7 @@ def display_message(message, clear=None):
         else:
             return menu.render()
     return
+
 
 def menu_create(services):
     # print ("Creating menu")
@@ -336,7 +342,7 @@ def menu_create(services):
 
     try:
         for i in services:
-            for k,v in i.items():
+            for k, v in i.items():
                 name = v['name']
                 service = v['details']['service']
                 dependancies = v['details']['dependancies']
@@ -358,8 +364,8 @@ def menu_create(services):
     return menu.render()
 
 
-def main():
 
+def main():
     global menu, default_service, services, mode
 
     # move these threads out of here if theres a problem with controls
@@ -367,14 +373,15 @@ def main():
     mcp3008_thread = BaseThread(
         name='mcp3008',
         target=mcp3008_poll
-        # callback=btn_press,
-        # callback_args="Enter"
+        # callback=cb,
+        # callback_args="fucksticks"
     )
 
     # start mcp3008 thread
     mcp3008_thread.start()
 
     rotary_encoder_thread = BaseThread(
+
         name='rotary_encoder',
         target=rotary_encoder
         # callback=rotary_turn,
@@ -383,7 +390,6 @@ def main():
 
     # start rotary encoder thread
     rotary_encoder_thread.start()
-
 
     if menu == None:
         if default_service:
@@ -403,7 +409,7 @@ def main():
 if __name__ == "__main__":
     try:
         main()
-    except KeyboardInterrupt:
+    except:
         service_manager(None, 'stop-all', None, services)
         display_message("Bye!", 'clear')
         helpers.app_shutdown().shutdown_app()
