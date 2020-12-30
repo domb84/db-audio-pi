@@ -1,10 +1,14 @@
+from time import sleep
+
 import spotipy
 import spotipy.oauth2
+from blinker import signal
 from spotipy.oauth2 import SpotifyOAuth
 
 
 class spotify():
     def __init__(self, client_id, client_secret, redirect_uri):
+        self.current_track = signal('track')
 
         self.SPOTIPY_CLIENT_ID = client_id
         self.SPOTIPY_CLIENT_SECRET = client_secret
@@ -62,3 +66,12 @@ class spotify():
         except Exception as e:
             print(e)
             return None
+
+    def listener(self):
+        track = self.current_playing_spotify()
+        while True:
+            new_track = self.current_playing_spotify()
+            if track != new_track:
+                track = new_track
+                self.current_track.send(track)
+            sleep(1)

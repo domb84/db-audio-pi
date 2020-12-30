@@ -1,25 +1,28 @@
 # from time import sleep
+from blinker import signal
 from shairportmetadatareader import AirplayPipeListener
 
 
 class airplay():
-    def on_track_info(lis, info):
+    def __init__(self):
+        self.current_track = signal('track')
+
+    def on_track_info(self, lis, info):
         """
         Print the current track information.
         :param lis: listener instance
         :param info: track information
         """
+        # print(info)
         try:
             artist = info['songartist']
             track_name = info['itemname']
-            print([artist, track_name])
+            self.current_track.send([artist, track_name])
+            # sleep(2)
         except:
             print(info)
 
-    # listener = AirplayPipeListener()  # You can use AirplayPipeListener or AirplayMQTTListener
-    listener = AirplayPipeListener()
-    # listener.pipe_file('/tmp/shairport-sync-metadata')
-    listener.bind(track_info=on_track_info)  # receive callbacks for metadata changes
-    listener.start_listening()  # read the data asynchronously from the udp server
-    # sleep(60)  # receive data for 60 seconds
-    # listener.stop_listening()
+    def listener(self):
+        listener = AirplayPipeListener()
+        listener.bind(track_info=self.on_track_info)  # receive callbacks for metadata changes
+        listener.start_listening()  # read the data asynchronously from the udp server

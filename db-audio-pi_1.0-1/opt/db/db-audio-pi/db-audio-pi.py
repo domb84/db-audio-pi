@@ -15,8 +15,11 @@ import includes.spotify as spotify
 import pigpio
 from RPi import GPIO
 from adafruit_mcp3xxx.analog_in import AnalogIn
+from blinker import signal
 from rpilcdmenu import *
 from rpilcdmenu.items import *
+
+current_track = signal('track')
 
 try:
 
@@ -37,8 +40,8 @@ try:
         exit(1)
 
     spotify = spotify.spotify(SPOTIPY_CLIENT_ID, SPOTIPY_CLIENT_SECRET, SPOTIPY_REDIRECT_URI)
-    airplay = airplay.airplay
-    bt_speaker = bt_speaker.bt_speaker(BT_SPEAKER_TRACK_PATH)
+    airplay = airplay.airplay().listener
+    bt_speaker = bt_speaker.bt_speaker(BT_SPEAKER_TRACK_PATH).listener
 
 except Exception as e:
     print("Exiting with error : " + str(e))
@@ -414,8 +417,20 @@ def menu_create(services):
     return menu.render()
 
 
+def change(track):
+    global track_changed, menu_accessed
+    if menu_accessed == False:
+        artist = track[0]
+        title = track[1]
+        display_message(title, artist)
+        track_changed = False
+
+
 def main():
     global menu, default_service, services, mode, menu_accessed, counter, track_changed
+
+    # subscribe to track change signal
+    current_track.connect(change)
 
     # mcp3008 on BaseThread with end callback
     mcp3008_thread = BaseThread(
@@ -438,6 +453,17 @@ def main():
 
     # start rotary encoder thread
     rotary_encoder_thread.start()
+
+    # bt thread
+    bt_thread = BaseThread(
+
+        name='bt',
+        target=bt_speaker
+        # callback=rotary_turn,
+        # callback_args=("direction")
+    )
+
+    bt_thread.start()
 
     # airplay thread
     airplay_thread = BaseThread(
@@ -467,18 +493,18 @@ def main():
         # check for menu access
         if menu_accessed == True:
             counter += 1
-        elif track_changed == True and menu_accessed == False:
-            playback_status(currentmode, 'current', static=True)
+        # elif track_changed == True and menu_accessed == False:
+        #     playback_status(currentmode, 'current', static=True)
 
         # print(counter)
-        if counter == 10:
+        if counter == 3:
             menu_accessed = False
             counter = 0
 
         if counter > 0:
             sleep(1)
-        else:
-            sleep(5)
+        # # else:
+        # #     sleep(5)
 
 
 if __name__ == "__main__":
