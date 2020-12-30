@@ -363,6 +363,10 @@ def playback_status(mode, action, static=False):
 
 
 def display_message(message, clear=False, static=False):
+    # clear will clear the display and not render anythng after
+    # static will leave the message on screen
+    # the default will render the menu after 2 seconds
+
     global menu
 
     if menu != None:
@@ -422,7 +426,7 @@ def change(track):
     if menu_accessed == False:
         artist = track[0]
         title = track[1]
-        display_message(title, artist)
+        display_message("title, artist", static=True)
         track_changed = False
 
 
