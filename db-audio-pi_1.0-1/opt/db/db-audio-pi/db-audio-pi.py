@@ -8,6 +8,8 @@ import adafruit_bitbangio as bitbangio
 import adafruit_mcp3xxx.mcp3008 as MCP
 import board
 import digitalio
+import includes.airplay as airplay
+import includes.bt_speaker as bt_speaker
 import includes.helpers as helpers
 import includes.spotify as spotify
 import pigpio
@@ -29,11 +31,14 @@ try:
         SPOTIPY_CLIENT_SECRET = config['SPOTIFY']['SECRET']
         SPOTIPY_REDIRECT_URI = config['SPOTIFY']['REDIRECT_URI']
         default_service = config['DEFAULT']['DEFAULT_SERVICE']
+        BT_SPEAKER_TRACK_PATH = config['BT_SPEAKER']['TRACK_PATH']
     except:
         print("Variables missing from conf")
         exit(1)
 
     spotify = spotify.spotify(SPOTIPY_CLIENT_ID, SPOTIPY_CLIENT_SECRET, SPOTIPY_REDIRECT_URI)
+    airplay = airplay.airplay
+    bt_speaker = bt_speaker.bt_speaker(BT_SPEAKER_TRACK_PATH)
 
 except Exception as e:
     print("Exiting with error : " + str(e))
@@ -332,7 +337,11 @@ def playback_status(mode, action, static=False):
                 display_message(artist + "-" + track)
 
     if mode == "bluetooth":
-        result = tools.bt_speaker(action)
+        try:
+            result = bt_speaker.current_playing_bt()
+        except Exception as e:
+            print(e)
+
         if result == None:
             if static:
                 display_message("No track playing", static=True)
@@ -408,8 +417,7 @@ def menu_create(services):
 def main():
     global menu, default_service, services, mode, menu_accessed, counter, track_changed
 
-    # move these threads out of here if theres a problem with controls
-    # mcp3008 on BaseThread with callback
+    # mcp3008 on BaseThread with end callback
     mcp3008_thread = BaseThread(
         name='mcp3008',
         target=mcp3008_poll
@@ -430,6 +438,17 @@ def main():
 
     # start rotary encoder thread
     rotary_encoder_thread.start()
+
+    # airplay thread
+    airplay_thread = BaseThread(
+
+        name='airplay',
+        target=airplay
+        # callback=rotary_turn,
+        # callback_args=("direction")
+    )
+
+    airplay_thread.start()
 
     if menu == None:
         if default_service:

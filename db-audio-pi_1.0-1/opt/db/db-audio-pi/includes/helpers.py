@@ -3,9 +3,6 @@ import os
 import signal
 import sys
 from subprocess import Popen, PIPE, call
-from time import sleep
-
-from shairportmetadatareader import AirplayPipeListener
 
 kill = False
 
@@ -71,36 +68,6 @@ class tools:
         if action == "shutdown":
             return_code = call(['sudo', 'shutdown', '-h', 'now'])
 
-    def bt_speaker(self, action):
-        def current_playing_bt():
-            track_info_path = "/tmp/.track"
-            track_info = self.configparser(track_info_path)
-            print(track_info)
-            try:
-                artist = track_info['INFO']['ARTIST']
-                track_name = track_info['INFO']['TITLE']
-                return [artist, track_name]
-            except Exception as e:
-                print(e)
-                return None
-
-        if action == "current":
-            return current_playing_bt()
-
-    def airplay(self):
-        def on_track_info(lis, info):
-            """
-            Print the current track information.
-            :param lis: listener instance
-            :param info: track information
-            """
-            print(info)
-
-        listener = AirplayPipeListener()  # You can use AirplayPipeListener or AirplayMQTTListener
-        listener.bind(track_info=on_track_info)  # receive callbacks for metadata changes
-        listener.start_listening()  # read the data asynchronously from the udp server
-        sleep(60)  # receive data for 60 seconds
-        listener.stop_listening()
 
     class app_shutdown:
         def _init_(self):
