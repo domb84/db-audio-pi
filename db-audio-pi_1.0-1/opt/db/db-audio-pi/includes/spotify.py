@@ -9,7 +9,8 @@ from spotipy.oauth2 import SpotifyOAuth
 class spotify():
 
     def __init__(self, client_id, client_secret, redirect_uri):
-        self.current_track = signal('track')
+        # init signal sender
+        self.send_data = signal('send-data')
 
         self.SPOTIPY_CLIENT_ID = client_id
         self.SPOTIPY_CLIENT_SECRET = client_secret
@@ -59,24 +60,25 @@ class spotify():
             self.refresh()
             result = self.sp.current_user_playing_track()
             if result == None:
-                return ['Spotify', 'Nothing playing']
+                return {'status': 'error', 'error': 'No track information', 'artist': '', 'track': ''}
             else:
                 try:
                     artist = result['item']['artists'][0]['name']
                     track_name = result['item']['name']
-                    return [artist, track_name]
+                    return {'status': 'playing', 'error': '', 'artist': artist, 'track': track_name}
                 except Exception as e:
-                    return ['Spotify', 'Information failed']
+                    return {'status': 'error', 'error': e, 'artist': '', 'track': ''}
         except Exception as e:
-            return ['Spotify', 'Information failed']
+            return {'status': 'error', 'error': e, 'artist': '', 'track': ''}
 
     def listener(self):
-        track = self.current_playing_spotify()
-        print(track)
+        track_info = self.current_playing_spotify()
+        print(track_info)
         while True:
             new_track = self.current_playing_spotify()
-            if track != new_track:
-                track = new_track
-                self.current_track.send(track)
-                # print("Track changed")
+            if track_info != new_track:
+                track_info = new_track
+                # send data to signal
+                self.send_data.send('spotify', status=track_info['status'], error=track_info['error'],
+                                    artist=track_info['artist'], title=track_info['track'])
             sleep(1)

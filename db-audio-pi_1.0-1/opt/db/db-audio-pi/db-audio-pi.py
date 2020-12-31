@@ -20,7 +20,7 @@ from blinker import signal
 from rpilcdmenu import *
 from rpilcdmenu.items import *
 
-current_track = signal('track')
+send_data = signal('send-data')
 
 try:
 
@@ -231,8 +231,7 @@ def rotary_turn(clockwise):
 
 
 def service_manager(item, action, name, service_list):
-    global menu
-    global mode
+    global menu, mode
 
     failed = []
 
@@ -427,13 +426,23 @@ def menu_create(services):
     return menu.render()
 
 
-def change(track):
-    global track_changed, menu_accessed
+@send_data.connect
+def receiver(sender, **kw):
+    global track_changed, menu_accessed, mode
+    # print("Got a signal sent by %r" % sender)
     if menu_accessed == False:
-        artist = track[0]
-        title = track[1]
-        display_message(("%s - %s" % (title, artist)), static=True)
-        track_changed = False
+        if sender == mode:
+            print("Message received from %s" % sender)
+            status = kw['status']
+            error = kw['error']
+            artist = kw['artist']
+            title = kw['title']
+            print(artist, title)
+            if status != '':
+                display_message(("%s by %s" % (title, artist)), static=True)
+            else:
+                display_message(("%s: %s" % (status, error)), static=True)
+            # track_changed = False
 
 
 def shutdown_app():
@@ -451,8 +460,8 @@ def shutdown_app():
 def main():
     global menu, default_service, services, mode, menu_accessed, counter, track_changed
 
-    # subscribe to track change signal
-    current_track.connect(change)
+    # # subscribe to track change signal
+    # receiver.connect(receiver)
 
     # mcp3008 on BaseThread with end callback
     mcp3008_thread = BaseThread(
@@ -518,7 +527,6 @@ def main():
     currentmode = mode
     print(("Boot mode is %s" % currentmode))
 
-    print("Shutdown status is %s" % str(shutdown.kill))
     while not shutdown.kill:
         # check for mode change
         if currentmode != mode:

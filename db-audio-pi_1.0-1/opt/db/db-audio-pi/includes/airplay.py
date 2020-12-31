@@ -5,7 +5,7 @@ from shairportmetadatareader import AirplayPipeListener
 
 class airplay():
     def __init__(self):
-        self.current_track = signal('track')
+        self.send_data = signal('send-data')
 
     def on_track_info(self, lis, info):
         """
@@ -13,16 +13,20 @@ class airplay():
         :param lis: listener instance
         :param info: track information
         """
-        # print(info)
         try:
-            artist = info['songartist']
-            track_name = info['itemname']
-            self.current_track.send([artist, track_name])
-            # sleep(2)
+            songtime = info['songtime']
+            try:
+                print(info)
+                artist = info['songartist']
+                track_name = info['itemname']
+                self.send_data.send('airplay', status='playing', error='', artist=artist, title=track_name)
+            except Exception as e:
+                self.send_data.send('airplay', status='error', error=e, artist='', title='')
         except:
-            print(info)
+            # skip if 'songtime' is missing otherwise we send too many
+            pass
 
     def listener(self):
         listener = AirplayPipeListener()
         listener.bind(track_info=self.on_track_info)  # receive callbacks for metadata changes
-        listener.start_listening()  # read the data asynchronously from the udp server
+        listener.start_listening()  # read the data asynchronously from PIPE

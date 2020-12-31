@@ -13,7 +13,8 @@ class bt_speaker():
             self.config = configparser.ConfigParser()
             self.path = path
             if os.path.exists(path):
-                self.current_track = signal('track')
+                # init signal sender
+                self.send_data = signal('send-data')
         except Exception as e:
             print(e)
             print("File path doesn't exist")
@@ -27,15 +28,18 @@ class bt_speaker():
         try:
             artist = self.track_info['INFO']['ARTIST']
             track_name = self.track_info['INFO']['TITLE']
-            return [artist, track_name]
+            return {'status': 'playing', 'error': '', 'artist': artist, 'track': track_name}
         except Exception as e:
-            return ['Bluetooth', 'Information failed']
+            return {'status': 'error', 'error': e, 'artist': '', 'track': ''}
 
     def listener(self):
-        track = self.current_playing_bt()
+        track_info = self.current_playing_bt()
+        print(track_info)
         while True:
             new_track = self.current_playing_bt()
-            if track != new_track:
-                track = new_track
-                self.current_track.send(track)
+            if track_info != new_track:
+                track_info = new_track
+                # send data to signal
+                self.send_data.send('bluetooth', status=track_info['status'], error=track_info['error'],
+                                    artist=track_info['artist'], title=track_info['track'])
             sleep(1)
