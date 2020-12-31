@@ -1,10 +1,9 @@
 import configparser
 import os
 import signal
-import sys
 from subprocess import Popen, PIPE, call
 
-kill = False
+
 
 
 class tools:
@@ -69,18 +68,12 @@ class tools:
             return_code = call(['sudo', 'shutdown', '-h', 'now'])
 
 
-    class app_shutdown:
-        def _init_(self):
-            signal.signal(signal.SIGINT, self.exit_gracefully)
-            signal.signal(signal.SIGTERM, self.exit_gracefully)
+class app_shutdown:
+    kill = False
 
-        def exit_gracefully(self, signum, frame):
-            self.shutdown_app()
+    def __init__(self):
+        signal.signal(signal.SIGINT, self.exit_gracefully)
+        signal.signal(signal.SIGTERM, self.exit_gracefully)
 
-        def shutdown_app(self):
-            global kill
-            kill = True
-            try:
-                sys.exit(0)
-            except SystemExit:
-                os._exit(0)
+    def exit_gracefully(self, signum, frame):
+        self.kill = True

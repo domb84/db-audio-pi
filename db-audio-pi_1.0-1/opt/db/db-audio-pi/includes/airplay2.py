@@ -1,15 +1,20 @@
+from time import sleep
+
+from blinker import signal
+
+
 class airplay():
+    def __init__(self):
+        try:
+            self.current_track = signal('track')
+        except:
+            print("Cannot init Airplay track info")
 
     def listener(self):
-        print("Airplay tracks disabled for now")
-
-        # cmd = ['/tmp/shairport-sync-metadata-reader/shairport-sync-metadata-reader', '<',
-        #        '/tmp/shairport-sync-metadata']
-        # process = subprocess.Popen(cmd, stdout=subprocess.PIPE)
-        # while True:
-        #     output = process.stdout.readline()
-        #     if process.poll() is not None and output == '':
-        #         break
-        #     if output:
-        #         print(output.strip())
-        # retval = process.poll()
+        track = ['Airplay', 'Track infomation disabled']
+        while True:
+            new_track = ['Airplay', 'Track infomation disabled']
+            if track != new_track:
+                track = new_track
+                self.current_track.send(track)
+            sleep(1)

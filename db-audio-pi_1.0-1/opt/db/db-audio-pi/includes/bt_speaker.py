@@ -25,11 +25,9 @@ class bt_speaker():
         try:
             artist = self.track_info['INFO']['ARTIST']
             track_name = self.track_info['INFO']['TITLE']
-            # self.current_track.send([artist, track_name])
             return [artist, track_name]
         except Exception as e:
-            print(e)
-            return None
+            return ['Bluetooth', 'Information failed']
 
     def listener(self):
         track = self.current_playing_bt()

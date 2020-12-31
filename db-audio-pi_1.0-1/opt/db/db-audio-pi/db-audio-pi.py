@@ -1,5 +1,7 @@
 import _thread
 import ast
+import os
+import sys
 import threading
 import time
 from time import sleep
@@ -24,6 +26,8 @@ current_track = signal('track')
 try:
 
     tools = helpers.tools()
+    shutdown = helpers.app_shutdown()
+
     # init config
     config_path = 'db-audio-pi.conf'
     config = tools.configparser(config_path)
@@ -39,7 +43,7 @@ try:
         print("Variables missing from conf")
         exit(1)
 
-    spotify = spotify.spotify(SPOTIPY_CLIENT_ID, SPOTIPY_CLIENT_SECRET, SPOTIPY_REDIRECT_URI)
+    spotify = spotify.spotify(SPOTIPY_CLIENT_ID, SPOTIPY_CLIENT_SECRET, SPOTIPY_REDIRECT_URI).listener
     airplay = airplay.airplay().listener
     bt_speaker = bt_speaker.bt_speaker(BT_SPEAKER_TRACK_PATH).listener
 
@@ -121,7 +125,7 @@ def mcp3008_poll():
             print("Uncaught press on Channel 1 %s" % chan1.value)
         elif chan2.value <= 64000:
             print("Uncaught press on  Channel 2 %s" % chan2.value)
-        time.sleep(0.1)
+        time.sleep(0.2)
 
 
 # button callback for mcp3008
@@ -374,6 +378,7 @@ def display_message(message, clear=False, static=False):
         if clear == True:
             menu.message(message.upper())
             time.sleep(2)
+            menu.clearDisplay()
             return menu.clearDisplay()
         elif static == True:
             return menu.message(message.upper())
@@ -432,6 +437,18 @@ def change(track):
         track_changed = False
 
 
+def shutdown_app():
+    print("Shutting down")
+    try:
+        service_manager(None, 'stop-all', None, services)
+        display_message("Bye!", clear=True)
+        sys.exit(0)
+    except SystemExit:
+        service_manager(None, 'stop-all', None, services)
+        display_message("Bye!", clear=True)
+        os._exit(0)
+
+
 def main():
     global menu, default_service, services, mode, menu_accessed, counter, track_changed
 
@@ -480,6 +497,17 @@ def main():
         # callback_args=("direction")
     )
 
+    # spotify thread
+    spotify_thread = BaseThread(
+
+        name='spotify',
+        target=spotify
+        # callback=rotary_turn,
+        # callback_args=("direction")
+    )
+
+    spotify_thread.start()
+
     airplay_thread.start()
 
     if menu == None:
@@ -490,7 +518,8 @@ def main():
     currentmode = mode
     print(("Boot mode is %s" % currentmode))
 
-    while True:
+    print("Shutdown status is %s" % str(shutdown.kill))
+    while not shutdown.kill:
         # check for mode change
         if currentmode != mode:
             currentmode = mode
@@ -506,14 +535,10 @@ def main():
             counter = 0
 
         sleep(1)
-        # print(counter)
-        # print("Menu accessed is %s" % str(menu_accessed))
-
+    shutdown_app()
 
 if __name__ == "__main__":
     try:
         main()
     except:
-        service_manager(None, 'stop-all', None, services)
-        display_message("Bye!", clear=True)
-        tools.app_shutdown().shutdown_app()
+        shutdown_app()
