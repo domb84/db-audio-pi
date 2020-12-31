@@ -17,7 +17,7 @@ class bt_speaker():
                 self.send_data = signal('send-data')
         except Exception as e:
             print(e)
-            print("File path doesn't exist")
+            # print("File path doesn't exist")
 
     def refresh(self):
         self.config.read(self.path)
@@ -34,7 +34,7 @@ class bt_speaker():
 
     def listener(self):
         track_info = self.current_playing_bt()
-        print(track_info)
+        # print(track_info)
         while True:
             new_track = self.current_playing_bt()
             if track_info != new_track:

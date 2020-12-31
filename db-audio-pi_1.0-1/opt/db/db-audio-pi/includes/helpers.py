@@ -4,8 +4,6 @@ import signal
 from subprocess import Popen, PIPE, call
 
 
-
-
 class tools:
 
     def configparser(self, path):
@@ -15,13 +13,6 @@ class tools:
             for i in self.config:
                 print(i)
         return self.config
-
-    def fooFunction(self, item_index):
-
-        """
-        sample method with a parameter
-        """
-        print("item %d pressed" % (item_index))
 
     # exit sub menu
     def exitSubMenu(self, submenu):

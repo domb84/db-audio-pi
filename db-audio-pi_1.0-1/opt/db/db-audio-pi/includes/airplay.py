@@ -16,7 +16,7 @@ class airplay():
         try:
             songtime = info['songtime']
             try:
-                print(info)
+                # print(info)
                 artist = info['songartist']
                 track_name = info['itemname']
                 self.send_data.send('airplay', status='playing', error='', artist=artist, title=track_name)

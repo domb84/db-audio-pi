@@ -12,6 +12,7 @@ class spotify():
         # init signal sender
         self.send_data = signal('send-data')
 
+        # import creds
         self.SPOTIPY_CLIENT_ID = client_id
         self.SPOTIPY_CLIENT_SECRET = client_secret
         self.SPOTIPY_REDIRECT_URI = redirect_uri
@@ -73,7 +74,7 @@ class spotify():
 
     def listener(self):
         track_info = self.current_playing_spotify()
-        print(track_info)
+        # print(track_info)
         while True:
             new_track = self.current_playing_spotify()
             if track_info != new_track:
