@@ -8,12 +8,14 @@ from blinker import signal
 class bt_speaker():
 
     def __init__(self, path):
+
         try:
             self.config = configparser.ConfigParser()
+            self.path = path
             if os.path.exists(path):
-                self.path = path
-            self.current_track = signal('track')
-        except:
+                self.current_track = signal('track')
+        except Exception as e:
+            print(e)
             print("File path doesn't exist")
 
     def refresh(self):

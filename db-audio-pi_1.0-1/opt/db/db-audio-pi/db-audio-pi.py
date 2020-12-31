@@ -1,4 +1,3 @@
-import _thread
 import ast
 import os
 import sys
@@ -10,7 +9,7 @@ import adafruit_bitbangio as bitbangio
 import adafruit_mcp3xxx.mcp3008 as MCP
 import board
 import digitalio
-import includes.airplay2 as airplay
+import includes.airplay as airplay
 import includes.bt_speaker as bt_speaker
 import includes.helpers as helpers
 import includes.spotify as spotify
@@ -46,6 +45,7 @@ try:
     spotify = spotify.spotify(SPOTIPY_CLIENT_ID, SPOTIPY_CLIENT_SECRET, SPOTIPY_REDIRECT_URI).listener
     airplay = airplay.airplay().listener
     bt_speaker = bt_speaker.bt_speaker(BT_SPEAKER_TRACK_PATH).listener
+    # thing = BT_SPEAKER_TRACK_PATH
 
 except Exception as e:
     print("Exiting with error : " + str(e))
@@ -143,8 +143,7 @@ def btn_press(btn):
     if btn == "Band":
         menu = menu.processDown()
     if btn == "Power":
-        # kill main thread from spawned threads
-        _thread.interrupt_main()
+        shutdown_app()
     menu_accessed = True
     time.sleep(0.25)
     return
@@ -497,6 +496,8 @@ def main():
         # callback_args=("direction")
     )
 
+    airplay_thread.start()
+
     # spotify thread
     spotify_thread = BaseThread(
 
@@ -508,7 +509,6 @@ def main():
 
     spotify_thread.start()
 
-    airplay_thread.start()
 
     if menu == None:
         if default_service:
