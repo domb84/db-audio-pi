@@ -8,7 +8,7 @@ import adafruit_bitbangio as bitbangio
 import adafruit_mcp3xxx.mcp3008 as MCP
 import board
 import digitalio
-import includes.airplay as airplay
+import includes.airplay2 as airplay
 import includes.bt_speaker as bt_speaker
 import includes.helpers as helpers
 import includes.spotify as spotify
@@ -371,21 +371,23 @@ def display_message(message, clear=False, static=False):
 
     if menu != None:
         menu.clearDisplay()
-        menu.message(message.upper())
-        time.sleep(2)
         if clear == True:
+            menu.message(message.upper())
+            time.sleep(2)
             return menu.clearDisplay()
         elif static == True:
-            return
+            return menu.message(message.upper())
         else:
+            menu.message(message.upper())
+            time.sleep(2)
             return menu.render()
+
     return
 
 
 def menu_create(services):
     # print ("Creating menu")
-    global menu
-    global mode
+    global menu, mode
 
     if menu == None:
         # print("init menu")
@@ -497,18 +499,15 @@ def main():
         # check for menu access
         if menu_accessed == True:
             counter += 1
-        # elif track_changed == True and menu_accessed == False:
-        #     playback_status(currentmode, 'current', static=True)
 
         # print(counter)
         if counter == 3:
             menu_accessed = False
             counter = 0
 
-        if counter > 0:
-            sleep(1)
-        # # else:
-        # #     sleep(5)
+        sleep(1)
+        # print(counter)
+        # print("Menu accessed is %s" % str(menu_accessed))
 
 
 if __name__ == "__main__":
