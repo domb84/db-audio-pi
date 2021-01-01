@@ -180,7 +180,7 @@ class menu_manager:
         # show error message on failure
         if len(failed) > 0:
             for i in failed:
-                self.display_message("Failed to stop or start %s service" % i)
+                self.display_message("Failed to stop or start\n%s" % i)
 
         elif service != None:
             # proceed with other action if theres no failures
@@ -188,14 +188,14 @@ class menu_manager:
             # if starting the service is successful
             if status == "0" and action == 'start':
                 self.set_mode.send('menu_manager', mode=name)
-                self.display_message("%s enabled" % name)
+                self.display_message("%s\nenabled" % name)
             elif status == "0" and action == 'stop':
                 self.set_mode.send('menu_manager', mode=None)
-                self.display_message("%s disabled" % name)
+                self.display_message("%s\ndisabled" % name)
             elif status == "0":
-                self.display_message("%s processed" % name)
+                self.display_message("%s\nprocessed" % name)
             else:
-                self.display_message("Failed to process %s " % name)
+                self.display_message("Failed to process\n%s " % name)
 
         # rebuild the menu so long as a menu exists
         if self.menu != None:
