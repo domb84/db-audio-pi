@@ -7,7 +7,6 @@ from rpilcdmenu.items import *
 
 tools = helpers.tools()
 
-
 class menu_manager:
 
     def __init__(self):
@@ -18,11 +17,59 @@ class menu_manager:
         # self.menu.start()
         # self.menu.debug()
 
+    def render_16x2(self, scrolling_text, index):
+        try:
+            lines = scrolling_text.split('\n')
+            line1 = lines[0]
+            line2 = lines[1]
+            last_char = index + 15
+            line1_vfd = "{:<16}".format(line1[index:last_char])
+            line2_vfd = "{:<16}".format(line2[index:last_char])
+            return ("%s\n%s" % (line1_vfd, line2_vfd))
+        except Exception as e:
+            return (e)
+
+    def scroll_text(self, input_message):
+        try:
+            lines = input_message.split('\n')
+
+            if len(lines) > 2:
+                return self.menu.message('Too many lines'.upper())
+
+            len1 = len(lines[0])
+            len2 = len(lines[1])
+
+            # add one to the longest length so it scrolls off screen
+            if len1 < len2:
+                text_length = len2 + 1
+            else:
+                text_length = len1 + 1
+
+            # render the initial text for 3 seconds
+            self.menu.clearDisplay()
+            text = self.render_16x2(input_message, 0)
+            self.menu.message(text.upper())
+            sleep(3)
+
+            # scroll the message right to left
+            for index in range(1, text_length):
+                self.menu.clearDisplay()
+                text = self.render_16x2(input_message, index)
+                self.menu.message(text.upper())
+                sleep(0.05)
+
+            # display the message again
+            self.menu.clearDisplay()
+            text = self.render_16x2(input_message, 0)
+            self.menu.message(text.upper())
+
+        except Exception as e:
+            self.menu.message(e)
+
     def display_message(self, message, clear=False, static=False):
         # clear will clear the display and not render anything after
-        # static will leave the message on screen
+        # static will scroll the message then leave  on screen
         # the default will render the menu after 2 seconds
-
         if self.menu != None:
             self.menu.clearDisplay()
             if clear == True:
@@ -31,7 +78,8 @@ class menu_manager:
                 self.menu.clearDisplay()
                 return self.menu.clearDisplay()
             elif static == True:
-                return self.menu.message(message.upper())
+                return self.scroll_text(message)
+                # return self.menu.message(message.upper())
             else:
                 self.menu.message(message.upper())
                 sleep(2)

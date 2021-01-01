@@ -98,11 +98,11 @@ def receiver(sender, **kw):
             # print(artist, title)
             if status != '':
                 if title != '':
-                    menu_manager.display_message(("%s by %s" % (title, artist)), static=True)
+                    menu_manager.display_message(("%s\n%s" % (artist, title)), static=True)
                 # else:
                 #     menu_manager.display_message("No track information", static=True)
             else:
-                menu_manager.display_message(("%s: %s" % (status, error)), static=True)
+                menu_manager.display_message(("%s\n%s" % (status, error)), static=True)
 
 
 @set_mode.connect
