@@ -2,3 +2,6 @@ git+https://github.com/Schlaubischlump/shairport-metadatareader-python
 kivy
 
 pip3 install git+https://github.com/htruong/shairport-metadatareader-python
+
+
+pip3 install git+https://github.com/domb84/rpi-lcd-menu

@@ -13,7 +13,7 @@ class menu_manager:
         self.set_mode = signal('set-mode')
         self.menu = RpiLCDMenu(7, 8, [25, 24, 23, 15])
         self.menu.message("Initialising")
-        # Not sure why the below are needed
+        # Not sure why the below are neededs
         # self.menu.start()
         # self.menu.debug()
 
@@ -69,7 +69,7 @@ class menu_manager:
     def display_message(self, message, clear=False, static=False):
         # clear will clear the display and not render anything after
         # static will scroll the message then leave  on screen
-        # the default will render the menu after 2 seconds
+        # the default will render the menu after 2 secondss
         if self.menu != None:
             self.menu.clearDisplay()
             if clear == True:
@@ -78,8 +78,8 @@ class menu_manager:
                 self.menu.clearDisplay()
                 return self.menu.clearDisplay()
             elif static == True:
-                return self.scroll_text(message)
-                # return self.menu.message(message.upper())
+                # return self.scroll_text(message)
+                return self.menu.message(message.upper(), autoscroll=True)
             else:
                 self.menu.message(message.upper())
                 sleep(2)
