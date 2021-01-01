@@ -98,7 +98,7 @@ def receiver(sender, **kw):
             # print(artist, title)
             if status != '':
                 if title != '':
-                    menu_manager.display_message(("%s\n%s" % (artist, title)), static=True)
+                    menu_manager.display_message(("%s\n%s" % (artist, title)), autoscroll=True)
                 # else:
                 #     menu_manager.display_message("No track information", static=True)
             else:
@@ -109,8 +109,10 @@ def receiver(sender, **kw):
 def set_mode(sender, **kw):
     global mode, services
     mode = kw['mode']
-    # print("Mode changed to %s" % mode)
-    return menu_manager.build_service_menu(services)
+    print("Mode changed to %s." % mode)
+    # do not attempt to  rebuild the menu here as it breaks the menu.
+    # return menu_manager.build_service_menu(services)
+    return
 
 @controller.connect
 def receive_controls(sender, **kw):
@@ -186,9 +188,9 @@ def main():
     if default_service:
         # start the default service
         menu_manager.service_manager(None, 'start', default_service, services)
-
-    # build the menu
-    menu_manager.build_service_menu(services)
+    else:
+        # only build the menu if no default service as it will get built but the mode signal
+        menu_manager.build_service_menu(services)
 
     while not shutdown.kill:
         # check for menu access

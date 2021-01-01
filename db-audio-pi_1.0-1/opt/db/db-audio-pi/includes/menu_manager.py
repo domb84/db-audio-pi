@@ -9,89 +9,54 @@ tools = helpers.tools()
 
 class menu_manager:
 
+
     def __init__(self):
         self.set_mode = signal('set-mode')
+
+        # init menu
         self.menu = RpiLCDMenu(7, 8, [25, 24, 23, 15])
+        self.menu.items = []
         self.menu.message("Initialising")
+
         # Not sure why the below are neededs
         # self.menu.start()
         # self.menu.debug()
 
-    def render_16x2(self, scrolling_text, index):
-        try:
-            lines = scrolling_text.split('\n')
-            line1 = lines[0]
-            line2 = lines[1]
-            last_char = index + 15
-            line1_vfd = "{:<16}".format(line1[index:last_char])
-            line2_vfd = "{:<16}".format(line2[index:last_char])
-            return ("%s\n%s" % (line1_vfd, line2_vfd))
-        except Exception as e:
-            return (e)
+    def display_message(self, message, clear=False, static=False, autoscroll=False):
+        # clear will clear the display and not render anything after (ie for shut down)
+        # static will leave the message on screen
+        # autoscroll will scroll the message then leave on screen
+        # the default will show the message, then render the menu after 2 secondss
 
-    def scroll_text(self, input_message):
-        try:
-            lines = input_message.split('\n')
-
-            if len(lines) > 2:
-                return self.menu.message('Too many lines'.upper())
-
-            len1 = len(lines[0])
-            len2 = len(lines[1])
-
-            # add one to the longest length so it scrolls off screen
-            if len1 < len2:
-                text_length = len2 + 1
-            else:
-                text_length = len1 + 1
-
-            # render the initial text for 3 seconds
-            self.menu.clearDisplay()
-            text = self.render_16x2(input_message, 0)
-            self.menu.message(text.upper())
-            sleep(3)
-
-            # scroll the message right to left
-            for index in range(1, text_length):
-                self.menu.clearDisplay()
-                text = self.render_16x2(input_message, index)
-                self.menu.message(text.upper())
-                sleep(0.05)
-
-            # display the message again
-            self.menu.clearDisplay()
-            text = self.render_16x2(input_message, 0)
-            self.menu.message(text.upper())
-
-        except Exception as e:
-            self.menu.message(e)
-
-    def display_message(self, message, clear=False, static=False):
-        # clear will clear the display and not render anything after
-        # static will scroll the message then leave  on screen
-        # the default will render the menu after 2 secondss
         if self.menu != None:
             self.menu.clearDisplay()
             if clear == True:
                 self.menu.message(message.upper())
                 sleep(2)
-                self.menu.clearDisplay()
                 return self.menu.clearDisplay()
             elif static == True:
-                # return self.scroll_text(message)
+                return self.menu.message(message.upper(), autoscroll=False)
+            elif autoscroll == True:
                 return self.menu.message(message.upper(), autoscroll=True)
             else:
                 self.menu.message(message.upper())
                 sleep(2)
                 return self.menu.render()
-        return
+        return self
 
     def build_service_menu(self, services):
 
         # Clear menu if it's not empty as you cannot remove menu items
+        # if self.menu != None:
+        #     self.menu = None
+        #     self.menu = RpiLCDMenu(7, 8, [25, 24, 23, 15])
+
+        # print("Menu items: %s" % self.menu.items)
+        # will migrate to removing items in future
+
+        # clear the menu
         if self.menu != None:
-            self.menu = None
-            self.menu = RpiLCDMenu(7, 8, [25, 24, 23, 15])
+            self.menu.items = []
 
         menu_item = 1
 
@@ -135,8 +100,8 @@ class menu_manager:
                 if n == name:
                     service = s
 
-        # print("service is " + str(service))
         # stop all other services if you're starting another, then start the dependencies we need
+        # or just stop them all if we're not supplied a named service to start
         if action == 'start' and service != None or action == 'stop-all' and name == None:
             # read all service items except the one you're starting and stop them and their dependencies
             # or stop all services
@@ -160,7 +125,7 @@ class menu_manager:
                                 d_status = str(tools.service(d_service, d_action))
                                 if d_status == "1" and d_action != 'disable':
                                     failed.append(d_service)
-                # start the service dependenices
+            # start the service dependenices
             for i in service_list:
                 for k, v in i.items():
                     n3 = v['name']
@@ -185,22 +150,26 @@ class menu_manager:
         elif service != None:
             # proceed with other action if theres no failures
             status = str(tools.service(service, action))
+            print("Status of service is: %s " % status)
+
             # if starting the service is successful
             if status == "0" and action == 'start':
                 self.set_mode.send('menu_manager', mode=name)
                 self.display_message("%s\nenabled" % name)
+            # if stopping the service is successful
             elif status == "0" and action == 'stop':
                 self.set_mode.send('menu_manager', mode=None)
                 self.display_message("%s\ndisabled" % name)
+            # if another option is successful
             elif status == "0":
                 self.display_message("%s\nprocessed" % name)
+            # if starting the service is successful
             else:
                 self.display_message("Failed to process\n%s " % name)
 
-        # rebuild the menu so long as a menu exists
-        if self.menu != None:
-            return self.build_service_menu(service_list)
-        return
+        # print("Hit the end of service manager. Rebuilding menu.")
+        return self.build_service_menu(service_list)
+        # return
 
     def check_service(self, service):
         status = str(tools.service(service, 'status'))
