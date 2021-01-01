@@ -10,7 +10,7 @@ class bt_speaker():
     def __init__(self, path):
 
         # init signal sender
-        self.send_data = signal('send-data')
+        self.track_data = signal('track-data')
         try:
             self.config = configparser.ConfigParser()
             self.path = path
@@ -43,6 +43,6 @@ class bt_speaker():
             if track_info != new_track:
                 track_info = new_track
                 # send data to signal
-                self.send_data.send('bluetooth', status=track_info['status'], error=track_info['error'],
-                                    artist=track_info['artist'], title=track_info['track'])
+                self.track_data.send('bluetooth', status=track_info['status'], error=track_info['error'],
+                                     artist=track_info['artist'], title=track_info['track'])
             sleep(1)

@@ -14,7 +14,7 @@ import includes.spotify as spotify
 from blinker import signal
 
 # init signalling
-send_data = signal('send-data')
+track_data = signal('track-data')
 controller = signal('controller')
 set_mode = signal('set-mode')
 
@@ -84,7 +84,7 @@ def shutdown_app():
 
 
 # subscribe to signal send data with receiver as the callback
-@send_data.connect
+@track_data.connect
 def receiver(sender, **kw):
     global menu_accessed, mode
     # print("Got a signal sent by %r" % sender)

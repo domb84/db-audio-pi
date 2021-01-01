@@ -10,7 +10,7 @@ class spotify():
 
     def __init__(self, client_id, client_secret, redirect_uri):
         # init signal sender
-        self.send_data = signal('send-data')
+        self.track_data = signal('track-data')
 
         # import creds
         self.SPOTIPY_CLIENT_ID = client_id
@@ -80,6 +80,6 @@ class spotify():
             if track_info != new_track:
                 track_info = new_track
                 # send data to signal
-                self.send_data.send('spotify', status=track_info['status'], error=track_info['error'],
-                                    artist=track_info['artist'], title=track_info['track'])
+                self.track_data.send('spotify', status=track_info['status'], error=track_info['error'],
+                                     artist=track_info['artist'], title=track_info['track'])
             sleep(1)

@@ -5,7 +5,7 @@ from shairportmetadatareader import AirplayPipeListener
 
 class airplay():
     def __init__(self):
-        self.send_data = signal('send-data')
+        self.track_data = signal('track-data')
 
     def on_track_info(self, lis, info):
         """
@@ -19,9 +19,9 @@ class airplay():
                 # print(info)
                 artist = info['songartist']
                 track_name = info['itemname']
-                self.send_data.send('airplay', status='playing', error='', artist=artist, title=track_name)
+                self.track_data.send('airplay', status='playing', error='', artist=artist, title=track_name)
             except Exception as e:
-                self.send_data.send('airplay', status='error', error=e, artist='', title='')
+                self.track_data.send('airplay', status='error', error=e, artist='', title='')
         except:
             # skip if 'songtime' is missing otherwise we send too many
             pass
