@@ -9,12 +9,15 @@ class bt_speaker():
 
     def __init__(self, path):
 
+        # init signal sender
+        self.send_data = signal('send-data')
         try:
             self.config = configparser.ConfigParser()
             self.path = path
             if os.path.exists(path):
-                # init signal sender
-                self.send_data = signal('send-data')
+                print("%s exists" % path)
+            else:
+                print("%s does not exist" % path)
         except Exception as e:
             print(e)
             # print("File path doesn't exist")

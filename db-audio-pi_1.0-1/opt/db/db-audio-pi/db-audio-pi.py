@@ -95,9 +95,12 @@ def receiver(sender, **kw):
             error = kw['error']
             artist = kw['artist']
             title = kw['title']
-            print(artist, title)
+            # print(artist, title)
             if status != '':
-                menu_manager.display_message(("%s by %s" % (title, artist)), static=True)
+                if title != '':
+                    menu_manager.display_message(("%s by %s" % (title, artist)), static=True)
+                # else:
+                #     menu_manager.display_message("No track information", static=True)
             else:
                 menu_manager.display_message(("%s: %s" % (status, error)), static=True)
 
