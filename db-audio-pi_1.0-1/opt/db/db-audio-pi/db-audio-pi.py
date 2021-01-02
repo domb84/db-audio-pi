@@ -76,13 +76,9 @@ def shutdown_app():
     # print("Shutting down")
     try:
         menu_manager.display_message(("Shutting down \nsystem").upper(), clear=True)
-        menu_manager.service_manager(None, 'stop-all', None, services)
-        menu_manager.display_message(("Bye!").upper(), clear=True)
         os._exit(0)
     except SystemExit:
         menu_manager.display_message(("Shutting down \nsystem").upper(), clear=True)
-        menu_manager.service_manager(None, 'stop-all', None, services)
-        menu_manager.display_message(("Bye!").upper(), clear=True)
         sys.exit(0)
 
 
