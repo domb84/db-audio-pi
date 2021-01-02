@@ -12,13 +12,13 @@ class menu_manager:
 
     def __init__(self):
         self.set_mode = signal('set-mode')
+        self.menu_accessed = signal('accessed')
 
         # init menu
-        self.menu = RpiLCDMenu(7, 8, [25, 24, 23, 15])
+        self.menu = RpiLCDMenu(7, 8, [25, 24, 23, 15], scrolling_menu=True)
         self.menu.items = []
-        self.menu.message("Initialising")
-
-        # Not sure why the below are neededs
+        self.menu.message(("initialising...").upper(), autoscroll=True)
+        # Not sure why the below are needed
         # self.menu.start()
         # self.menu.debug()
 

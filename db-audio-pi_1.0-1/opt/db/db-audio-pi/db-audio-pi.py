@@ -17,6 +17,7 @@ from blinker import signal
 track_data = signal('track-data')
 controller = signal('controller')
 set_mode = signal('set-mode')
+menu_accessed = signal('accessed')
 
 try:
 
@@ -72,15 +73,17 @@ class BaseThread(threading.Thread):
 
 
 def shutdown_app():
-    print("Shutting down")
+    # print("Shutting down")
     try:
+        menu_manager.display_message(("Shutting down \nsystem").upper(), clear=True)
         menu_manager.service_manager(None, 'stop-all', None, services)
-        menu_manager.display_message("Bye!", clear=True)
-        sys.exit(0)
-    except SystemExit:
-        menu_manager.service_manager(None, 'stop-all', None, services)
-        menu_manager.display_message("Bye!", clear=True)
+        menu_manager.display_message(("Bye!").upper(), clear=True)
         os._exit(0)
+    except SystemExit:
+        menu_manager.display_message(("Shutting down \nsystem").upper(), clear=True)
+        menu_manager.service_manager(None, 'stop-all', None, services)
+        menu_manager.display_message(("Bye!").upper(), clear=True)
+        sys.exit(0)
 
 
 # subscribe to signal send data with receiver as the callback
@@ -95,7 +98,8 @@ def receiver(sender, **kw):
             error = kw['error']
             artist = kw['artist']
             title = kw['title']
-            # print(artist, title)
+
+            print("Menu instance %s" % menu_manager)
             if status != '':
                 if title != '':
                     menu_manager.display_message(("%s\n%s" % (artist, title)), autoscroll=True)
@@ -117,6 +121,9 @@ def set_mode(sender, **kw):
 @controller.connect
 def receive_controls(sender, **kw):
     global menu_accessed
+
+    print("Menu instance %s" % menu_manager)
+
     if kw['control'] == 'clockwise':
         menu_manager.menu = menu_manager.menu.processDown()
     if kw['control'] == 'counter-clockwise':
