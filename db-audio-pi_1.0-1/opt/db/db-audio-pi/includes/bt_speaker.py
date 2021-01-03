@@ -15,12 +15,12 @@ class bt_speaker():
             self.config = configparser.ConfigParser()
             self.path = path
             if os.path.exists(path):
-                print("%s exists" % path)
+                print('%s exists' % path)
             else:
-                print("%s does not exist" % path)
+                print('%s does not exist' % path)
         except Exception as e:
             print(e)
-            # print("File path doesn't exist")
+            # print('File path doesn't exist')
 
     def refresh(self):
         self.config.read(self.path)

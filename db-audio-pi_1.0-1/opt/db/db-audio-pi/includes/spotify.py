@@ -17,7 +17,7 @@ class spotify():
         self.SPOTIPY_CLIENT_SECRET = client_secret
         self.SPOTIPY_REDIRECT_URI = redirect_uri
 
-        scope = "user-library-read user-read-playback-state"
+        scope = 'user-library-read user-read-playback-state'
 
         try:
             self.sp_oauth = SpotifyOAuth(open_browser=False, client_id=self.SPOTIPY_CLIENT_ID,
@@ -42,7 +42,7 @@ class spotify():
 
         except Exception as e:
             print(e)
-            print("Cannot initialise Spotify information")
+            print('Cannot initialise Spotify information')
 
     def refresh(self):
         try:
@@ -54,7 +54,7 @@ class spotify():
                 pass
         except Exception as e:
             print(e)
-            print("Refreshing token failed")
+            print('Refreshing token failed')
 
     def current_playing_spotify(self):
         try:

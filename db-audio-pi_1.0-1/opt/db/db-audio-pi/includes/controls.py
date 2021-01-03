@@ -16,7 +16,7 @@ class controls:
 
     def rotary_encoder(self):
         # setup rotary encoder variables for pigpio
-        # BE SURE TO START PIGPIO IN PWM MODE "t -0"
+        # BE SURE TO START PIGPIO IN PWM MODE 't -0'
         Enc_A = 17  # Encoder input A: input GPIO 17
         Enc_B = 27  # Encoder input B: input GPIO 27
 
@@ -50,7 +50,7 @@ class controls:
         pi.callback(Enc_A, pigpio.EITHER_EDGE, rotary_interrupt)
         pi.callback(Enc_B, pigpio.EITHER_EDGE, rotary_interrupt)
 
-        print("Rotary thread start successfully, listening for turns")
+        print('Rotary thread start successfully, listening for turns')
 
     def buttons(self):
         # mcp3008 button reader setup
@@ -64,7 +64,7 @@ class controls:
         chan1 = AnalogIn(mcp, MCP.P7)
         chan2 = AnalogIn(mcp, MCP.P0)
 
-        print("MCP3008 thread start successfully, listening for buttons")
+        print('MCP3008 thread start successfully, listening for buttons')
 
         while True:
             # read button states
@@ -91,7 +91,7 @@ class controls:
             elif 44000 <= chan2.value <= 48000:
                 self.controller.send('controls', control='dimmer')
             elif chan1.value <= 64000:
-                print("Uncaught press on Channel 1 %s" % chan1.value)
+                print('Uncaught press on Channel 1 %s' % chan1.value)
             elif chan2.value <= 64000:
-                print("Uncaught press on  Channel 2 %s" % chan2.value)
+                print('Uncaught press on  Channel 2 %s' % chan2.value)
             sleep(0.2)

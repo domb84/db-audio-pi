@@ -17,7 +17,7 @@ class menu_manager:
         # init menu
         self.menu = RpiLCDMenu(7, 8, [25, 24, 23, 15], scrolling_menu=True)
         self.menu.items = []
-        self.menu.message(("initialising...").upper(), autoscroll=True)
+        self.menu.message(('initialising...').upper(), autoscroll=True)
         # Not sure why the below are needed
         # self.menu.start()
         # self.menu.debug()
@@ -51,7 +51,7 @@ class menu_manager:
         #     self.menu = None
         #     self.menu = RpiLCDMenu(7, 8, [25, 24, 23, 15])
 
-        # print("Menu items: %s" % self.menu.items)
+        # print('Menu items: %s' % self.menu.items)
         # will migrate to removing items in future
 
         # clear the menu
@@ -66,14 +66,14 @@ class menu_manager:
                     name = v['name']
                     service = v['details']['service']
                     dependancies = v['details']['dependancies']
-                    if self.check_service(service) == "0":
+                    if self.check_service(service) == '0':
                         # FunctionItem(Menu Entry, function, function options)
-                        menu_function = FunctionItem(("%s ON" % name).upper(), self.service_manager,
+                        menu_function = FunctionItem(('%s ON' % name).upper(), self.service_manager,
                                                      [menu_item, 'stop', name, services])
                         self.menu.append_item(menu_function)
                         menu_item = + 1
                     else:
-                        menu_function = FunctionItem(("%s OFF" % name).upper(), self.service_manager,
+                        menu_function = FunctionItem(('%s OFF' % name).upper(), self.service_manager,
                                                      [menu_item, 'start', name, services])
                         self.menu.append_item(menu_function)
                         menu_item = + 1
@@ -114,7 +114,7 @@ class menu_manager:
                         pass
                     else:
                         status = str(tools.service(s2, 'stop'))
-                        if status == "1":
+                        if status == '1':
                             failed.append(n2)
                         for i in d2:
                             # print(i)
@@ -123,7 +123,7 @@ class menu_manager:
                             d_action = d2[i]['action']
                             if d_on_action == 'stop':
                                 d_status = str(tools.service(d_service, d_action))
-                                if d_status == "1" and d_action != 'disable':
+                                if d_status == '1' and d_action != 'disable':
                                     failed.append(d_service)
             # start the service dependenices
             for i in service_list:
@@ -139,35 +139,35 @@ class menu_manager:
                             d_action = d3[i]['action']
                             if d_on_action == 'start':
                                 d_status = str(tools.service(d_service, d_action))
-                                if d_status == "1" and d_action != 'disable':
+                                if d_status == '1' and d_action != 'disable':
                                     failed.append(d_service)
 
         # show error message on failure
         if len(failed) > 0:
             for i in failed:
-                self.display_message("Failed to stop or start\n%s" % i)
+                self.display_message('Failed to stop or start\n%s' % i)
 
         elif service != None:
             # proceed with other action if theres no failures
             status = str(tools.service(service, action))
-            print("Status of service is: %s " % status)
+            print('Status of service is: %s ' % status)
 
             # if starting the service is successful
-            if status == "0" and action == 'start':
+            if status == '0' and action == 'start':
                 self.set_mode.send('menu_manager', mode=name)
-                self.display_message("%s\nenabled" % name)
+                self.display_message('%s\nenabled' % name)
             # if stopping the service is successful
-            elif status == "0" and action == 'stop':
+            elif status == '0' and action == 'stop':
                 self.set_mode.send('menu_manager', mode=None)
-                self.display_message("%s\ndisabled" % name)
+                self.display_message('%s\ndisabled' % name)
             # if another option is successful
-            elif status == "0":
-                self.display_message("%s\nprocessed" % name)
+            elif status == '0':
+                self.display_message('%s\nprocessed' % name)
             # if starting the service is successful
             else:
-                self.display_message("Failed to process\n%s " % name)
+                self.display_message('Failed to process\n%s ' % name)
 
-        # print("Hit the end of service manager. Rebuilding menu.")
+        # print('Hit the end of service manager. Rebuilding menu.')
         return self.build_service_menu(service_list)
         # return
 

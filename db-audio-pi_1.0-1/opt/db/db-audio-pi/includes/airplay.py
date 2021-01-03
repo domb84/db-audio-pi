@@ -8,11 +8,11 @@ class airplay():
         self.track_data = signal('track-data')
 
     def on_track_info(self, lis, info):
-        """
+        '''
         Print the current track information.
         :param lis: listener instance
         :param info: track information
-        """
+        '''
         try:
             songtime = info['songtime']
             try:

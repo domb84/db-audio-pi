@@ -37,7 +37,7 @@ try:
         default_service = config['DEFAULT']['DEFAULT_SERVICE']
         BT_SPEAKER_TRACK_PATH = config['BT_SPEAKER']['TRACK_PATH']
     except:
-        print("Variables missing from conf")
+        print('Variables missing from conf')
         exit(1)
 
     spotify = spotify.spotify(SPOTIPY_CLIENT_ID, SPOTIPY_CLIENT_SECRET, SPOTIPY_REDIRECT_URI).listener
@@ -48,7 +48,7 @@ try:
     menu_manager = menu_manager.menu_manager()
 
 except Exception as e:
-    print("Exiting with error : " + str(e))
+    print('Exiting with error : ' + str(e))
     exit(1)
 
 
@@ -73,12 +73,12 @@ class BaseThread(threading.Thread):
 
 
 def shutdown_app():
-    # print("Shutting down")
+    # print('Shutting down')
     try:
-        menu_manager.display_message(("Shutting down \nsystem").upper(), clear=True)
+        menu_manager.display_message(('Shutting down \nsystem').upper(), clear=True)
         os._exit(0)
     except SystemExit:
-        menu_manager.display_message(("Shutting down \nsystem").upper(), clear=True)
+        menu_manager.display_message(('Shutting down \nsystem').upper(), clear=True)
         sys.exit(0)
 
 
@@ -86,30 +86,30 @@ def shutdown_app():
 @track_data.connect
 def receiver(sender, **kw):
     global menu_accessed, mode
-    # print("Got a signal sent by %r" % sender)
+    # print('Got a signal sent by %r' % sender)
     if menu_accessed == False:
         if sender == mode:
-            # print("Message received from %s" % sender)
+            # print('Message received from %s' % sender)
             status = kw['status']
             error = kw['error']
             artist = kw['artist']
             title = kw['title']
 
-            print("Menu instance %s" % menu_manager)
+            print('Menu instance %s' % menu_manager)
             if status != '':
                 if title != '':
-                    menu_manager.display_message(("%s\n%s" % (artist, title)), autoscroll=True)
+                    menu_manager.display_message(('%s\n%s' % (artist, title)), autoscroll=True)
                 # else:
-                #     menu_manager.display_message("No track information", static=True)
+                #     menu_manager.display_message('No track information', static=True)
             else:
-                menu_manager.display_message(("%s\n%s" % (status, error)), static=True)
+                menu_manager.display_message(('%s\n%s' % (status, error)), static=True)
 
 
 @set_mode.connect
 def set_mode(sender, **kw):
     global mode, services
     mode = kw['mode']
-    print("Mode changed to %s." % mode)
+    print('Mode changed to %s.' % mode)
     # do not attempt to  rebuild the menu here as it breaks the menu.
     # return menu_manager.build_service_menu(services)
     return
@@ -118,23 +118,23 @@ def set_mode(sender, **kw):
 def receive_controls(sender, **kw):
     global menu_accessed
 
-    print("Menu instance %s" % menu_manager)
+    print('Menu instance %s' % menu_manager)
 
     if kw['control'] == 'clockwise':
         menu_manager.menu = menu_manager.menu.processDown()
     if kw['control'] == 'counter-clockwise':
         menu_manager.menu = menu_manager.menu.processUp()
-    if kw['control'] == "enter":
+    if kw['control'] == 'enter':
         menu_manager.menu = menu_manager.menu.processEnter()
-    if kw['control'] == "auto tuning":
+    if kw['control'] == 'auto tuning':
         menu_manager.menu = menu_manager.menu.processEnter()
-    if kw['control'] == "info":
+    if kw['control'] == 'info':
         pass
-    if kw['control'] == "function":
+    if kw['control'] == 'function':
         menu_manager.menu = menu_manager.menu.processUp()
-    if kw['control'] == "band":
+    if kw['control'] == 'band':
         menu_manager.menu = menu_manager.menu.processDown()
-    if kw['control'] == "power":
+    if kw['control'] == 'power':
         shutdown_app()
     menu_accessed = True
     time.sleep(0.25)
@@ -183,7 +183,7 @@ def main():
         name='spotify',
         target=spotify
         # callback=rotary_turn,
-        # callback_args=("direction")
+        # callback_args=('direction')
     )
 
     spotify_thread.start()
@@ -209,7 +209,8 @@ def main():
 
     shutdown_app()
 
-if __name__ == "__main__":
+
+if __name__ == '__main__':
     try:
         main()
     except:
