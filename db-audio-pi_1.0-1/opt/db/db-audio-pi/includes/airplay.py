@@ -13,6 +13,7 @@ class airplay():
         :param lis: listener instance
         :param info: track information
         '''
+        # print(info)
         try:
             songtime = info['songtime']
             try:

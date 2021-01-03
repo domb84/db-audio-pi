@@ -29,7 +29,7 @@ class menu_manager:
         # the default will show the message, then render the menu after 2 secondss
 
         if self.menu != None:
-            self.menu.clearDisplay()
+            # self.menu.clearDisplay()
             if clear == True:
                 self.menu.message(message.upper())
                 sleep(2)
@@ -45,14 +45,6 @@ class menu_manager:
         return self
 
     def build_service_menu(self, services):
-
-        # Clear menu if it's not empty as you cannot remove menu items
-        # if self.menu != None:
-        #     self.menu = None
-        #     self.menu = RpiLCDMenu(7, 8, [25, 24, 23, 15])
-
-        # print('Menu items: %s' % self.menu.items)
-        # will migrate to removing items in future
 
         # clear the menu
         if self.menu != None:

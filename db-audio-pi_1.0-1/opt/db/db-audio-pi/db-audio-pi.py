@@ -56,6 +56,7 @@ except Exception as e:
 mode = None
 menu_accessed = True
 counter = 0
+last_song = {'artist': '', 'title': ''}
 
 
 class BaseThread(threading.Thread):
@@ -85,22 +86,28 @@ def shutdown_app():
 # subscribe to signal send data with receiver as the callback
 @track_data.connect
 def receiver(sender, **kw):
-    global menu_accessed, mode
+    global menu_accessed, mode, last_song
     # print('Got a signal sent by %r' % sender)
-    if menu_accessed == False:
-        if sender == mode:
-            # print('Message received from %s' % sender)
-            status = kw['status']
-            error = kw['error']
-            artist = kw['artist']
-            title = kw['title']
+    # print('Message received from %s' % sender)
 
-            print('Menu instance %s' % menu_manager)
+    if sender == 'request':
+        if last_song['title'] != '':
+            menu_manager.display_message(('%s\n%s' % (last_song['artist'], last_song['title'])), autoscroll=True)
+        else:
+            menu_manager.display_message('No track\ninformation'.upper())
+
+    if sender == mode:
+        status = kw['status']
+        error = kw['error']
+        artist = kw['artist']
+        title = kw['title']
+
+        last_song = {'artist': artist, 'title': title}
+
+        if menu_accessed == False:
             if status != '':
                 if title != '':
                     menu_manager.display_message(('%s\n%s' % (artist, title)), autoscroll=True)
-                # else:
-                #     menu_manager.display_message('No track information', static=True)
             else:
                 menu_manager.display_message(('%s\n%s' % (status, error)), static=True)
 
@@ -129,7 +136,7 @@ def receive_controls(sender, **kw):
     if kw['control'] == 'auto tuning':
         menu_manager.menu = menu_manager.menu.processEnter()
     if kw['control'] == 'info':
-        pass
+        track_data.send('request')
     if kw['control'] == 'function':
         menu_manager.menu = menu_manager.menu.processUp()
     if kw['control'] == 'band':
