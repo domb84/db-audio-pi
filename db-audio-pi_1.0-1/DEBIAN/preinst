@@ -1,0 +1,36 @@
+#!/bin/sh
+
+# intall nymea-networkmanager
+echo "deb http://repository.nymea.io buster rpi" | sudo tee /etc/apt/sources.list.d/nymea.list
+sudo apt-key adv --keyserver keyserver.ubuntu.com --recv-key A1A19ED6
+sudo apt-get update
+sudo apt-get install nymea-networkmanager dirmngr
+
+# install required packages
+apt install python3, build-essential, git, xmltoman, autoconf, automake, \
+libtool, libdaemon-dev, libpopt-dev, libconfig-dev, libasound2-dev,  libpulse-dev,  avahi-daemon, libavahi-client-dev, libssl-dev, \
+libmbedtls-dev, libsoxr-dev, libsndfile1-dev, pigpio, python-pigpio, python3-pigpio
+
+# install raspotify
+curl -sL https://dtcooper.github.io/raspotify/install.sh | sh
+
+# build and install shairport-sync
+cd /tmp || exit
+git clone https://github.com/mikebrady/shairport-sync.git
+# build with required options
+cd shairport-sync || exit
+autoreconf -i -f
+./configure --sysconfdir=/etc --with-alsa --with-pa --with-avahi --with-ssl=openssl --with-metadata --with-soxr --with-systemd --with-configfiles --with-libdaemon
+make
+make install
+cd /tmp || exit
+rm -r shairport-sync
+
+# install bt_speaker
+curl -sL  https://raw.githubusercontent.com/lukasjapan/bt-speaker/master/install.sh | sh
+
+# install python dependencies
+pip3 install git+https://github.com/domb84/rpi-lcd-menu
+pip3 install git+https://github.com/htruong/shairport-metadatareader-python
+pip3 install adafruit-circuitpython-mcp3xxx
+pip3 install adafruit-circuitpython-bitbangio

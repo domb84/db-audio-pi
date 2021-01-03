@@ -3,7 +3,9 @@ Version: 1.0-1
 Section: base
 Priority: optional
 Architecture: armhf
-Depends: python3 (>= 3.7.3)
+Depends: python3 (>= 3.7.3), pigpio, python-pigpio, python3-pigpio
+
 Maintainer: Dominic Bird <dominic@dominicbird.com>
 Description: DB Audio Pi
  Python project to control a TEAC tuner
+
