@@ -41,7 +41,7 @@ try:
     bt_speaker = bt_speaker.bt_speaker(BT_SPEAKER_TRACK_PATH).listener
     encoder = controls.controls().rotary_encoder
     buttons = controls.controls().buttons
-    menu_manager = menu_manager.menu_manager(services)
+    menu_manager = menu_manager.menu_manager(services, DEVICE)
 
 except Exception as e:
     print('Exiting with error : ' + str(e))
@@ -119,7 +119,7 @@ def set_mode(sender, **kw):
 
 @controller.connect
 def receive_controls(sender, **kw):
-    global menu_accessed
+    global menu_accessed, mode
 
     print('Menu instance %s' % menu_manager)
 
@@ -136,9 +136,19 @@ def receive_controls(sender, **kw):
     if kw['control'] == 'dimmer':
         menu_manager.dimmer()
     if kw['control'] == 'function':
-        menu_manager.menu = menu_manager.menu.processUp()
+        menu_manager.display_message(("current mode: \n%s" % mode).upper())
     if kw['control'] == 'band':
-        menu_manager.menu = menu_manager.menu.processDown()
+        pass
+    if kw['control'] == 'timer':
+        pass
+    if kw['control'] == 'time adj':
+        pass
+    if kw['control'] == 'daily':
+        pass
+    if kw['control'] == 'auto tuning':
+        pass
+    if kw['control'] == 'memory':
+        pass
     if kw['control'] == 'power':
         shutdown_app()
     menu_accessed = True

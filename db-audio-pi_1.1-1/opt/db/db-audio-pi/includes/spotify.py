@@ -31,10 +31,27 @@ class spotify():
                 self.token_info = False
 
             if not self.token_info:
+                # working
                 auth_url = self.sp_oauth.get_authorize_url()
                 print(auth_url)
+
+                # doms
+                # user_agent = 'Mozilla/5.0 (Windows NT 6.1; WOW64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/41.0.2272.101 Safari/537.36'
+                # # header variable
+                # headers = {'User-Agent': user_agent}
+                # # creating request
+                # req = urllib.request.Request(auth_url, None, headers)
+                # # getting html
+                # url = urllib.request.urlopen(req).url
+                # print(url)
+                #
+                # response = requests.post(auth_url)
+                # print(response.url)
+
+                #  working
                 response = input('Paste the above link into your browser, then paste the redirect url here: ')
                 code = self.sp_oauth.parse_response_code(response)
+
                 self.token_info = self.sp_oauth.get_access_token(code)
                 token = self.token_info['access_token']
 

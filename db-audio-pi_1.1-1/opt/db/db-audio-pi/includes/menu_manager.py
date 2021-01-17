@@ -10,10 +10,11 @@ tools = helpers.tools()
 
 class menu_manager:
 
-    def __init__(self, service_list):
+    def __init__(self, service_list, device_name):
         self.set_mode = signal('set-mode')
         self.menu_accessed = signal('accessed')
         self.service_list = service_list
+        self.device_name = device_name
         # init menu
         self.menu = RpiLCDMenu(7, 8, [25, 24, 23, 15], scrolling_menu=True)
         self.menu.items = []
@@ -47,30 +48,11 @@ class menu_manager:
         if self.menu != None:
             self.menu.items = []
 
-        # menu_item = 1
-
         try:
-            # build service menu
-            for i in self.service_list:
-                for k, v in i.items():
-                    name = v['name']
-                    service = v['details']['service']
-                    if self.check_service(service) == '0':
-                        # FunctionItem(Menu Entry, function, [function args])
-                        menu_function = FunctionItem(('%s ON' % name).upper(), self.service_manager,
-                                                     ['stop', name])
-                        self.menu.append_item(menu_function)
-                        # menu_item = + 1
-                    else:
-                        menu_function = FunctionItem(('%s OFF' % name).upper(), self.service_manager,
-                                                     ['start', name])
-                        self.menu.append_item(menu_function)
-                        # menu_item = + 1
-
             # create submenu
             powermenu = RpiLCDSubMenu(self.menu)
             # create submenu button on main menu
-            powermenu_button = SubmenuItem(('Power options').upper(), powermenu, self.menu)
+            powermenu_button = SubmenuItem(('Power').upper(), powermenu, self.menu)
             # add to main menu
             self.menu.append_item(powermenu_button)
             powermenu.append_item(FunctionItem(('Back').upper(), self.exitSubMenu, [powermenu]))
@@ -95,7 +77,7 @@ class menu_manager:
             shutdownmenu.append_item(FunctionItem(('Back').upper(), self.exitSubMenu, [shutdownmenu]))
             shutdownmenu.append_item(FunctionItem(('Shutdown Now').upper(), self.power, ['shutdown']))
 
-            # create submenu
+            # create config submenu
             configmenu = RpiLCDSubMenu(self.menu)
             # create submenu button on main menu
             configmenu_button = SubmenuItem(('Configuration').upper(), configmenu, self.menu)
@@ -104,7 +86,30 @@ class menu_manager:
             # back button
             configmenu.append_item(FunctionItem(('Back').upper(), self.exitSubMenu, [configmenu]))
 
-            # create submenu of submenu
+            # create mode submenu of config submenu
+            modemenu = RpiLCDSubMenu(configmenu)
+            # create submenu button on submenu
+            modemenu_button = SubmenuItem(('Mode').upper(), modemenu, configmenu)
+            # add to submenu menu
+            configmenu.append_item(modemenu_button)
+            # add options to submenu
+            modemenu.append_item(FunctionItem(('Back').upper(), self.exitSubMenu, [modemenu]))
+            # build current mode options
+            for i in self.service_list:
+                for k, v in i.items():
+                    name = v['name']
+                    service = v['details']['service']
+                    if tools.service(service, 'status'):
+                        # FunctionItem(Menu Entry, function, [function args])
+                        service_option = FunctionItem(('%s<ON' % name).upper(), self.service_manager,
+                                                      ['stop', name])
+                        modemenu.append_item(service_option)
+                    else:
+                        service_option = FunctionItem(('%s' % name).upper(), self.service_manager,
+                                                      ['start', name])
+                        modemenu.append_item(service_option)
+
+            # create wifi submenu of config submenu
             wifimenu = RpiLCDSubMenu(configmenu)
             # create submenu button on submenu
             wifimenu_button = SubmenuItem(('Wifi').upper(), wifimenu, configmenu)
@@ -123,6 +128,10 @@ class menu_manager:
 
         except Exception as e:
             print(e)
+
+        # catch if the submenu sets the index too high, else menu will fail as it cannot select an item
+        if self.menu.current_option > (len(self.menu.items) - 1):
+            self.menu.current_option = (len(self.menu.items) - 1)
 
         # return rendered menu
         # if you do not return the menu it will render the original one again
@@ -156,8 +165,8 @@ class menu_manager:
                     if n2 == name:
                         pass
                     else:
-                        status = str(tools.service(s2, 'stop'))
-                        if status == '1':
+                        status = tools.service(s2, 'stop')
+                        if status is False:
                             failed.append(n2)
                         for i in d2:
                             # print(i)
@@ -165,8 +174,9 @@ class menu_manager:
                             d_on_action = d2[i]['on_action']
                             d_action = d2[i]['action']
                             if d_on_action == 'stop':
-                                d_status = str(tools.service(d_service, d_action))
-                                if d_status == '1' and d_action != 'disable':
+                                d_status = tools.service(d_service, d_action)
+                                if d_status is False:
+                                    # if d_action != 'disable':
                                     failed.append(d_service)
             # start the service dependenices
             for i in self.service_list:
@@ -181,30 +191,32 @@ class menu_manager:
                             d_on_action = d3[i]['on_action']
                             d_action = d3[i]['action']
                             if d_on_action == 'start':
-                                d_status = str(tools.service(d_service, d_action))
-                                if d_status == '1' and d_action != 'disable':
+                                d_status = tools.service(d_service, d_action)
+                                if d_status is False:
+                                    # if d_action != 'disable':
                                     failed.append(d_service)
 
         # show error message on failure
+        print("Had %s failures" % failed)
         if len(failed) > 0:
             for i in failed:
-                self.display_message('Failed to stop or start\n%s' % i)
+                self.display_message('Failed to stop or start\n%s' % i, autoscroll=True)
 
         elif service != None:
             # proceed with other action if theres no failures
-            status = str(tools.service(service, action))
-            print('Status of service is: %s ' % status)
+            status = tools.service(service, action)
+            print('Status of service is: %s ' % str(status))
 
             # if starting the service is successful
-            if status == '0' and action == 'start':
+            if status is True and action == 'start':
                 self.set_mode.send('menu_manager', mode=name)
                 self.display_message('%s\nenabled' % name)
             # if stopping the service is successful
-            elif status == '0' and action == 'stop':
+            elif status is True and action == 'stop':
                 self.set_mode.send('menu_manager', mode=None)
                 self.display_message('%s\ndisabled' % name)
             # if another option is successful
-            elif status == '0':
+            elif status is True:
                 self.display_message('%s\nprocessed' % name)
             # if starting the service is successful
             else:
@@ -212,11 +224,7 @@ class menu_manager:
 
         # print('Hit the end of service manager. Rebuilding menu.')
         return self.build_service_menu()
-        # return
 
-    def check_service(self, service):
-        status = str(tools.service(service, 'status'))
-        return status
 
     def power(self, action):
         if action == 'shutdown':
@@ -234,14 +242,15 @@ class menu_manager:
 
     def wifi_configuration(self, action):
         if action == 'start':
-            result = tools.app_start('nymea-networkmanager', '-m always -a db-audio-pi -p db-audio-pi')
-            if result:
+            result = tools.app_start('nymea-networkmanager',
+                                     '-m always -a ' + self.device_name + ' -p ' + self.device_name)
+            if result is True:
                 self.display_message(('Open the berrylan application').upper())
             else:
                 self.display_message(('Error starting wifi configuration').upper())
         elif action == 'stop':
             result = tools.app_kill('nymea-networkmanager')
-            if result:
+            if result is True:
                 self.display_message(('Configuration cancelled').upper())
             else:
                 self.display_message(('Error cancelling configuration').upper(), )
