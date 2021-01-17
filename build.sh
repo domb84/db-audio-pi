@@ -7,9 +7,9 @@
 /bin/systemctl daemon-reload
 
 # build and install new package
-chmod +x db-audio-pi_1.0-1/DEBIAN/preinst
-/usr/bin/dpkg-deb --build db-audio-pi_1.0-1
-/usr/bin/dpkg -i --force-overwrite db-audio-pi_1.0-1.deb
+chmod +x db-audio-pi_1.1-1/DEBIAN/preinst
+/usr/bin/dpkg-deb --build db-audio-pi_1.1-1
+/usr/bin/dpkg -i --force-overwrite db-audio-pi_1.1-1.deb
 # start new service
 /bin/systemctl daemon-reload
 /bin/systemctl start db-audio-pi
