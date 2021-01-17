@@ -135,7 +135,7 @@ class tools:
         except:
             pass
         rc = process.returncode
-        print("Kill %s return: %s" % str(rc))
+        print("Kill %s return: %s" % (application, str(rc)))
         if rc == 0:
             print("Killed: %s" % application)
             return True
