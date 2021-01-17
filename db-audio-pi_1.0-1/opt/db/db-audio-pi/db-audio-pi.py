@@ -5,13 +5,14 @@ import threading
 import time
 from time import sleep
 
+from blinker import signal
+
 import includes.airplay as airplay
 import includes.bt_speaker as bt_speaker
 import includes.controls as controls
 import includes.helpers as helpers
 import includes.menu_manager as menu_manager
 import includes.spotify as spotify
-from blinker import signal
 
 # init signalling
 track_data = signal('track-data')
@@ -24,28 +25,23 @@ try:
     tools = helpers.tools()
     shutdown = helpers.app_shutdown()
 
-
     # init config
     config_path = 'db-audio-pi.conf'
     config = tools.configparser(config_path)
-    try:
-        services = ast.literal_eval(config['DEFAULT']['SERVICES'])
-        DEVICE = config['DEFAULT']['DEVICE']
-        SPOTIPY_CLIENT_ID = config['SPOTIFY']['ID']
-        SPOTIPY_CLIENT_SECRET = config['SPOTIFY']['SECRET']
-        SPOTIPY_REDIRECT_URI = config['SPOTIFY']['REDIRECT_URI']
-        default_service = config['DEFAULT']['DEFAULT_SERVICE']
-        BT_SPEAKER_TRACK_PATH = config['BT_SPEAKER']['TRACK_PATH']
-    except:
-        print('Variables missing from conf')
-        exit(1)
+    services = ast.literal_eval(config['DEFAULT']['SERVICES'])
+    DEVICE = config['DEFAULT']['DEVICE']
+    SPOTIPY_CLIENT_ID = config['SPOTIFY']['ID']
+    SPOTIPY_CLIENT_SECRET = config['SPOTIFY']['SECRET']
+    SPOTIPY_REDIRECT_URI = config['SPOTIFY']['REDIRECT_URI']
+    default_service = config['DEFAULT']['DEFAULT_SERVICE']
+    BT_SPEAKER_TRACK_PATH = config['BT_SPEAKER']['TRACK_PATH']
 
     spotify = spotify.spotify(SPOTIPY_CLIENT_ID, SPOTIPY_CLIENT_SECRET, SPOTIPY_REDIRECT_URI).listener
     airplay = airplay.airplay().listener
     bt_speaker = bt_speaker.bt_speaker(BT_SPEAKER_TRACK_PATH).listener
     encoder = controls.controls().rotary_encoder
     buttons = controls.controls().buttons
-    menu_manager = menu_manager.menu_manager()
+    menu_manager = menu_manager.menu_manager(services)
 
 except Exception as e:
     print('Exiting with error : ' + str(e))
@@ -114,7 +110,7 @@ def receiver(sender, **kw):
 
 @set_mode.connect
 def set_mode(sender, **kw):
-    global mode, services
+    global mode
     mode = kw['mode']
     print('Mode changed to %s.' % mode)
     # do not attempt to  rebuild the menu here as it breaks the menu.
@@ -137,6 +133,8 @@ def receive_controls(sender, **kw):
         menu_manager.menu = menu_manager.menu.processEnter()
     if kw['control'] == 'info':
         track_data.send('request')
+    if kw['control'] == 'dimmer':
+        menu_manager.dimmer()
     if kw['control'] == 'function':
         menu_manager.menu = menu_manager.menu.processUp()
     if kw['control'] == 'band':
@@ -197,10 +195,10 @@ def main():
 
     if default_service:
         # start the default service
-        menu_manager.service_manager(None, 'start', default_service, services)
+        menu_manager.service_manager('start', default_service)
     else:
         # only build the menu if no default service as it will get built but the mode signal
-        menu_manager.build_service_menu(services)
+        menu_manager.build_service_menu()
 
     while not shutdown.kill:
         # check for menu access
@@ -222,3 +220,4 @@ if __name__ == '__main__':
         main()
     except:
         shutdown_app()
+
