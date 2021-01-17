@@ -1,3 +1,4 @@
+import re
 from subprocess import call
 from time import sleep
 
@@ -117,6 +118,9 @@ class menu_manager:
             configmenu.append_item(wifimenu_button)
             # add options to submenu
             wifimenu.append_item(FunctionItem(('Back').upper(), self.exitSubMenu, [wifimenu]))
+
+            wifistatus = FunctionItem(('Status').upper(), self.wifi_status, [])
+            wifimenu.append_item(wifistatus)
 
             if tools.app_status('nymea-networkmanager'):
                 wifioption = FunctionItem(('Cancel setup').upper(), self.wifi_configuration, ['stop'])
@@ -253,5 +257,18 @@ class menu_manager:
             if result is True:
                 self.display_message(('Configuration cancelled').upper())
             else:
-                self.display_message(('Error cancelling configuration').upper(), )
+                self.display_message(('Error cancelling configuration').upper())
         return self.build_service_menu()
+
+    def wifi_status(self):
+        wifi_info = tools.wifi()
+        print(wifi_info)
+        ssid = wifi_info['SSID']
+        signal = wifi_info['signal']
+        signal = re.sub(r'\sdBm', '', signal)
+        dbm_num = int(signal)
+        quality = 2 * (dbm_num + 100)
+
+        print(ssid)
+        self.display_message(ssid + '\n' + str(quality) + '%')
+        return self.menu.render()

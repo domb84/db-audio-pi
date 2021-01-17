@@ -1,5 +1,6 @@
 import configparser
 import os
+import re
 import signal
 import subprocess
 
@@ -134,7 +135,7 @@ class tools:
         except:
             pass
         rc = process.returncode
-        print("Stop return code from app_manager: %s" % str(rc))
+        print("Kill %s return: %s" % str(rc))
         if rc == 0:
             print("Killed: %s" % application)
             return True
@@ -159,6 +160,31 @@ class tools:
             print("Failed to start: %s with args: %s and rc: %s" % (application, arguments, str(rc)))
             return False
 
+    def wifi(self):
+        command = """jq --slurp --raw-input 'split("\n") | map(select(length > 0)|split(":") | {(.[0] ): (.[1:] | join(""))})'"""
+        process = subprocess.Popen(['sudo', 'iw', 'dev', 'wlan0', 'link'], stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+        output, err = process.communicate()
+        try:
+            output = output.decode('utf-8')
+            # cleanup mac address
+            output = re.sub("(\w+):(\w+):(\w+):(\w+):(\w+):(\w+)", r":\1-\2-\3-\4-\5-\6", output)
+            # remove tabs and split into list
+            output = re.sub(r'\t', '', output).splitlines()
+            # remove empty list items
+            output = [x for x in output if x]
+            # finally split into dictionary
+            d = dict(x.split(':', 1) for x in output)
+            d = {k: v.strip() for k, v in d.items()}
+            err = err.decode('utf-8').strip()
+        except:
+            pass
+        rc = process.returncode
+        print("Stop return code from app_manager: %s" % str(rc))
+        if rc == 0:
+            return d
+        else:
+            return err
 
 class app_shutdown:
     kill = False
