@@ -1,4 +1,3 @@
-import re
 from subprocess import call
 from time import sleep
 
@@ -262,13 +261,19 @@ class menu_manager:
 
     def wifi_status(self):
         wifi_info = tools.wifi()
-        print(wifi_info)
-        ssid = wifi_info['SSID']
-        signal = wifi_info['signal']
-        signal = re.sub(r'\sdBm', '', signal)
-        dbm_num = int(signal)
-        quality = 2 * (dbm_num + 100)
-
-        print(ssid)
-        self.display_message(ssid + '\n' + str(quality) + '%')
+        try:
+            ssid = wifi_info['SSID']
+            quality = self.render_bars(wifi_info['quality'])
+            message1 = 'Connected to:\n%s' % ssid
+            message2 = 'Signal\n%s' % quality
+            self.display_message(message1.upper())
+            self.display_message(message2.upper())
+        except:
+            message = wifi_info
+            self.display_message(message.upper())
         return self.menu.render()
+
+    def render_bars(self, input):
+        bar = int(input / 100 * 16)
+        bars = '\240' * bar
+        return bars

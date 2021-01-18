@@ -161,12 +161,13 @@ class tools:
             return False
 
     def wifi(self):
-        command = """jq --slurp --raw-input 'split("\n") | map(select(length > 0)|split(":") | {(.[0] ): (.[1:] | join(""))})'"""
+        # return connected wifi status as dictionary  pairs
         process = subprocess.Popen(['sudo', 'iw', 'dev', 'wlan0', 'link'], stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
         output, err = process.communicate()
+        output = output.decode('utf-8').strip()
+        err = err.decode('utf-8').strip()
         try:
-            output = output.decode('utf-8')
             # cleanup mac address
             output = re.sub("(\w+):(\w+):(\w+):(\w+):(\w+):(\w+)", r":\1-\2-\3-\4-\5-\6", output)
             # remove tabs and split into list
@@ -174,15 +175,27 @@ class tools:
             # remove empty list items
             output = [x for x in output if x]
             # finally split into dictionary
-            d = dict(x.split(':', 1) for x in output)
-            d = {k: v.strip() for k, v in d.items()}
-            err = err.decode('utf-8').strip()
-        except:
+            output = dict(x.split(':', 1) for x in output)
+            # trim whitespace in all items
+            output = {k.strip(): v.strip() for k, v in output.items()}
+            # add signal %
+            signal = int(re.sub(r' dBm', '', output['signal']))
+            # calculate signal quality
+            if (signal <= -100):
+                quality = 0
+            elif (signal >= -50):
+                quality = 100
+            else:
+                quality = 2 * (signal + 100)
+            # add it to dictionary
+            output['quality'] = quality
+        except Exception as e:
+            print(e)
             pass
         rc = process.returncode
-        print("Stop return code from app_manager: %s" % str(rc))
+        # print("Stop return code from app_manager: %s" % str(rc))
         if rc == 0:
-            return d
+            return output
         else:
             return err
 
