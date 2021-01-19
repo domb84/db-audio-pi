@@ -161,43 +161,46 @@ class tools:
             return False
 
     def wifi(self):
+
         # return connected wifi status as dictionary  pairs
         process = subprocess.Popen(['sudo', 'iw', 'dev', 'wlan0', 'link'], stdout=subprocess.PIPE,
                                    stderr=subprocess.PIPE)
-        output, err = process.communicate()
+        output, err = process.communicate(timeout=1)
         output = output.decode('utf-8').strip()
         err = err.decode('utf-8').strip()
-        try:
-            # cleanup mac address
-            output = re.sub("(\w+):(\w+):(\w+):(\w+):(\w+):(\w+)", r":\1-\2-\3-\4-\5-\6", output)
-            # remove tabs and split into list
-            output = re.sub(r'\t', '', output).splitlines()
-            # remove empty list items
-            output = [x for x in output if x]
-            # finally split into dictionary
-            output = dict(x.split(':', 1) for x in output)
-            # trim whitespace in all items
-            output = {k.strip(): v.strip() for k, v in output.items()}
-            # add signal %
-            signal = int(re.sub(r' dBm', '', output['signal']))
-            # calculate signal quality
-            if (signal <= -100):
-                quality = 0
-            elif (signal >= -50):
-                quality = 100
-            else:
-                quality = 2 * (signal + 100)
-            # add it to dictionary
-            output['quality'] = quality
-        except Exception as e:
-            print(e)
-            pass
         rc = process.returncode
-        # print("Stop return code from app_manager: %s" % str(rc))
+
         if rc == 0:
-            return output
+            if 'not connected' in output.lower():
+                return 'Not connected'
+
+            else:
+                # cleanup mac address
+                output = re.sub('(\w+):(\w+):(\w+):(\w+):(\w+):(\w+)', r':\1-\2-\3-\4-\5-\6', output)
+                # remove tabs and split into list
+                output = re.sub(r'\t', '', output).splitlines()
+                # remove empty list items
+                output = [x for x in output if x]
+                # finally split into dictionary
+                output = dict(x.split(':', 1) for x in output)
+                # trim whitespace in all items
+                output = {k.strip(): v.strip() for k, v in output.items()}
+                # add signal %
+                signal = int(re.sub(r' dBm', '', output['signal']))
+                # calculate signal quality
+                if (signal <= -100):
+                    quality = 0
+                elif (signal >= -50):
+                    quality = 100
+                else:
+                    quality = 2 * (signal + 100)
+                # add it to dictionary
+                output['quality'] = quality
+
+                return output
         else:
             return err
+
 
 class app_shutdown:
     kill = False

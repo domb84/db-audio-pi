@@ -1,0 +1,4 @@
+#!/bin/bash -x
+
+/usr/bin/touch /tmp/.track
+chmod 777 /tmp/.track

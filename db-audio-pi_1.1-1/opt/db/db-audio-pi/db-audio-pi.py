@@ -219,6 +219,10 @@ def main():
         if counter == 3:
             menu_accessed = False
             counter = 0
+            # if last_song['title'] != '':
+            #     menu_manager.display_message(('%s\n%s' % (last_song['artist'], last_song['title'])), autoscroll=True)
+            # else:
+            #     menu_manager.display_message('No track\ninformation'.upper())
 
         sleep(1)
 

@@ -260,17 +260,15 @@ class menu_manager:
         return self.build_service_menu()
 
     def wifi_status(self):
-        wifi_info = tools.wifi()
+        wifi_status = tools.wifi()
         try:
-            ssid = wifi_info['SSID']
-            quality = self.render_bars(wifi_info['quality'])
-            message1 = 'Connected to:\n%s' % ssid
-            message2 = 'Signal\n%s' % quality
-            self.display_message(message1.upper())
-            self.display_message(message2.upper())
-        except:
-            message = wifi_info
+            ssid = wifi_status['SSID']
+            quality = wifi_status['quality']
+            quality = self.render_bars(quality)
+            message = '%s\n%s' % (ssid, quality)
             self.display_message(message.upper())
+        except:
+            self.display_message(wifi_status.upper())
         return self.menu.render()
 
     def render_bars(self, input):
