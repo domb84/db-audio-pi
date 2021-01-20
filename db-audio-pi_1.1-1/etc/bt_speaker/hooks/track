@@ -10,8 +10,8 @@
 # echo Genre: $GENRE
 # echo
 
-read $ARTIST
-[[ ${#ARTIST} -gt 2 ]] && cat <<EOF > /tmp/.track
+read $TITLE
+[[ ${#TITLE} -gt 2 ]] && cat <<EOF >/tmp/.track
 [INFO]
 ARTIST=$ARTIST
 ALBUM=$ALBUM

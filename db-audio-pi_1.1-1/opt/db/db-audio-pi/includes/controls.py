@@ -80,7 +80,7 @@ class controls:
                 self.controller.send('controls', control='band')
             elif 11000 <= chan2.value <= 16000:
                 self.controller.send('controls', control='function')
-            elif 26000 <= chan2.value <= 28000:
+            elif 26000 <= chan2.value <= 29000:
                 self.controller.send('controls', control='enter')
             elif 19000 <= chan2.value <= 22000:
                 self.controller.send('controls', control='info')

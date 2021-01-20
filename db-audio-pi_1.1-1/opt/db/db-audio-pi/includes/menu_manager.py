@@ -22,7 +22,7 @@ class menu_manager:
 
     def display_message(self, message, clear=False, static=False, autoscroll=False):
         # clear will clear the display and not render anything after (ie for shut down)
-        # static will leave the message on screen
+        # static will leave the message on screen, assuming nothing renders over it immedaitely after
         # autoscroll will scroll the message then leave on screen
         # the default will show the message, then render the menu after 2 secondss
 
@@ -35,7 +35,7 @@ class menu_manager:
             elif static == True:
                 return self.menu.message(message.upper(), autoscroll=False)
             elif autoscroll == True:
-                return self.menu.message(message.upper(), autoscroll=True)
+                self.menu.message(message.upper(), autoscroll=True)
             else:
                 self.menu.message(message.upper())
                 sleep(2)
@@ -245,18 +245,29 @@ class menu_manager:
 
     def wifi_configuration(self, action):
         if action == 'start':
-            result = tools.app_start('nymea-networkmanager',
-                                     '-m always -a ' + self.device_name + ' -p ' + self.device_name)
-            if result is True:
-                self.display_message(('Open the berrylan application').upper())
+            if tools.service('bt_speaker', 'status'):
+                self.service_manager('stop', 'bluetooth')
+
+            if tools.service('bt_speaker', 'status') is not True:
+                result = tools.app_start('nymea-networkmanager',
+                                         '-m always -a ' + self.device_name + ' -p ' + self.device_name)
+
+                if result is True:
+                    self.display_message(('Open the berrylan application to configure').upper(), autoscroll=True)
+                    sleep(4)
+                else:
+                    self.display_message(('Error starting wifi configuration').upper())
+
             else:
-                self.display_message(('Error starting wifi configuration').upper())
+                self.display_message(('Error disabling bluetooth playback').upper())
+
         elif action == 'stop':
             result = tools.app_kill('nymea-networkmanager')
             if result is True:
                 self.display_message(('Configuration cancelled').upper())
             else:
                 self.display_message(('Error cancelling configuration').upper())
+
         return self.build_service_menu()
 
     def wifi_status(self):
