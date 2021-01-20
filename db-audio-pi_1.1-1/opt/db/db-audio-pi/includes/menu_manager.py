@@ -140,7 +140,7 @@ class menu_manager:
         # if you do not return the menu it will render the original one again
         return self.menu.render()
 
-    def service_manager(self, action, name):
+    def service_manager(self, action, name, rebuild_menu=True):
 
         # set  variables
         failed = []
@@ -225,6 +225,8 @@ class menu_manager:
             else:
                 self.display_message('Failed to process\n%s ' % name)
 
+        if rebuild_menu is not True:
+            return self
         # print('Hit the end of service manager. Rebuilding menu.')
         return self.build_service_menu()
 
@@ -246,15 +248,16 @@ class menu_manager:
     def wifi_configuration(self, action):
         if action == 'start':
             if tools.service('bt_speaker', 'status'):
-                self.service_manager('stop', 'bluetooth')
+                self.service_manager('stop', 'bluetooth', rebuild_menu=False)
 
             if tools.service('bt_speaker', 'status') is not True:
                 result = tools.app_start('nymea-networkmanager',
                                          '-m always -a ' + self.device_name + ' -p ' + self.device_name)
 
                 if result is True:
-                    self.display_message(('Open the berrylan application to configure').upper(), autoscroll=True)
-                    sleep(4)
+                    # TODO autoscroll here either does not work or causes an error if you don't rebuild the service menu
+                    # autoscroll starting another instance?
+                    self.display_message(('select %s in berrylan' % self.device_name).upper(), autoscroll=True)
                 else:
                     self.display_message(('Error starting wifi configuration').upper())
 
