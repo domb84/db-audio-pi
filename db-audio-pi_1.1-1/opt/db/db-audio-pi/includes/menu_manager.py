@@ -35,7 +35,7 @@ class menu_manager:
             elif static == True:
                 return self.menu.message(message.upper(), autoscroll=False)
             elif autoscroll == True:
-                self.menu.message(message.upper(), autoscroll=True)
+                return self.menu.message(message.upper(), autoscroll=True)
             else:
                 self.menu.message(message.upper())
                 sleep(2)
@@ -257,7 +257,9 @@ class menu_manager:
                 if result is True:
                     # TODO autoscroll here either does not work or causes an error if you don't rebuild the service menu
                     # autoscroll starting another instance?
-                    self.display_message(('select %s in berrylan' % self.device_name).upper(), autoscroll=True)
+                    self.display_message(('open berrylan and select %s to configure' % self.device_name).upper(),
+                                         autoscroll=True)
+                    return self.menu
                 else:
                     self.display_message(('Error starting wifi configuration').upper())
 
