@@ -19,6 +19,11 @@ class spotify():
         try:
             self.config = configparser.ConfigParser()
             self.path = path
+            # import creds
+            self.SPOTIPY_CLIENT_ID = client_id
+            self.SPOTIPY_CLIENT_SECRET = client_secret
+            self.access_token = None
+
             if os.path.exists(path):
                 print('%s exists' % path)
             else:
@@ -26,33 +31,56 @@ class spotify():
         except Exception as e:
             print(e)
 
-        # import creds
-        self.SPOTIPY_CLIENT_ID = client_id
-        self.SPOTIPY_CLIENT_SECRET = client_secret
-        self.access_token = None
-
     def auth_token(self):
-        AUTH_URL = 'https://accounts.spotify.com/api/token'
+        # check if token is valid and refresh if necessary
+        try:
+            # check if token is valid
+            BASE_URL = 'https://api.spotify.com/v1/'
+            params = {}
+            headers = {
+                'Authorization': 'Bearer {token}'.format(token=self.access_token)
+            }
 
-        # POST
-        auth_response = requests.post(AUTH_URL, {
-            'grant_type': 'client_credentials',
-            'client_id': self.SPOTIPY_CLIENT_ID,
-            'client_secret': self.SPOTIPY_CLIENT_SECRET,
-        })
+            r = requests.get(BASE_URL + 'me/', params=params, headers=headers)
+            r = r.json()
 
-        # convert the response to JSON
-        auth_response_data = auth_response.json()
+            try:
+                status = r['error']['status']
+                message = r['error']['message']
 
-        # save the access token
-        self.access_token = auth_response_data['access_token']
-        return True
+            except:
+                status = None
+                message = None
+
+            if status == 401 and 'invalid' in message.lower():
+                # refresh token
+                AUTH_URL = 'https://accounts.spotify.com/api/token'
+
+                # POST
+                auth_response = requests.post(AUTH_URL, {
+                    'grant_type': 'client_credentials',
+                    'client_id': self.SPOTIPY_CLIENT_ID,
+                    'client_secret': self.SPOTIPY_CLIENT_SECRET,
+                })
+
+                # convert the response to JSON
+                auth_response_data = auth_response.json()
+
+                # save the access token
+                self.access_token = auth_response_data['access_token']
+
+                print("Token refreshed")
+
+            return True
+
+        except:
+            return False
 
     def track_metadata(self, track_id):
-        result = self.auth_token()
+        token = self.auth_token()
         print(track_id)
 
-        if result is not False:
+        if token is not False:
 
             BASE_URL = 'https://api.spotify.com/v1/'
             params = {'ids': track_id}
@@ -71,6 +99,8 @@ class spotify():
                 return {'status': 'playing', 'error': '', 'artist': artist, 'track': track_name}
             except Exception as e:
                 return {'status': 'error', 'error': e, 'artist': '', 'track': ''}
+        else:
+            return {'status': 'error', 'error': 'Cannot retrieve track information', 'artist': '', 'track': ''}
 
     def refresh(self):
         self.config.read(self.path)
@@ -78,7 +108,6 @@ class spotify():
 
     def listener(self):
         self.refresh()
-        # try:
         track_id = self.track_info['INFO']['ID']
         event = self.track_info['INFO']['EVENT']
         self.auth_token()
