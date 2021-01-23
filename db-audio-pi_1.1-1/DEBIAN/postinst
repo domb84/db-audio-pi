@@ -1,6 +1,0 @@
-#!/bin/sh
-
-if [ "$1" = "configure" ]; then
-    chmod 755 /etc/bt_speaker/hooks/startup
-    chmod 755 /etc/bt_speaker/hooks/track
-fi

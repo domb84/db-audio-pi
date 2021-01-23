@@ -12,7 +12,7 @@ import includes.bt_speaker as bt_speaker
 import includes.controls as controls
 import includes.helpers as helpers
 import includes.menu_manager as menu_manager
-import includes.spotify as spotify
+import includes.spotify_v2 as spotify
 
 # init signalling
 track_data = signal('track-data')
@@ -32,11 +32,13 @@ try:
     DEVICE = config['DEFAULT']['DEVICE']
     SPOTIPY_CLIENT_ID = config['SPOTIFY']['ID']
     SPOTIPY_CLIENT_SECRET = config['SPOTIFY']['SECRET']
-    SPOTIPY_REDIRECT_URI = config['SPOTIFY']['REDIRECT_URI']
+    # SPOTIPY_REDIRECT_URI = config['SPOTIFY']['REDIRECT_URI']
+    SPOTIPY_TRACK_PATH = config['SPOTIFY']['TRACK_PATH']
+
     default_service = config['DEFAULT']['DEFAULT_SERVICE']
     BT_SPEAKER_TRACK_PATH = config['BT_SPEAKER']['TRACK_PATH']
 
-    spotify = spotify.spotify(SPOTIPY_CLIENT_ID, SPOTIPY_CLIENT_SECRET, SPOTIPY_REDIRECT_URI).listener
+    spotify = spotify.spotify(SPOTIPY_TRACK_PATH, SPOTIPY_CLIENT_ID, SPOTIPY_CLIENT_SECRET).listener
     airplay = airplay.airplay().listener
     bt_speaker = bt_speaker.bt_speaker(BT_SPEAKER_TRACK_PATH).listener
     encoder = controls.controls().rotary_encoder

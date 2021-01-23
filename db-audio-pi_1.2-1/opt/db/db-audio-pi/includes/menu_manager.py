@@ -255,8 +255,7 @@ class menu_manager:
                                          '-m always -a ' + self.device_name + ' -p ' + self.device_name)
 
                 if result is True:
-                    # TODO autoscroll here either does not work or causes an error if you don't rebuild the service menu
-                    # autoscroll starting another instance?
+                    self.build_service_menu()
                     self.display_message(('open berrylan and select %s to configure' % self.device_name).upper(),
                                          autoscroll=True)
                     return self.menu

@@ -1,0 +1,7 @@
+#!/bin/sh
+
+if [ "$1" = "configure" ]; then
+  chmod 755 /etc/bt_speaker/hooks/startup
+  chmod 755 /etc/bt_speaker/hooks/track
+  chmod 755 /opt/db/db-audio-pi/scripts/spotify.sh
+fi

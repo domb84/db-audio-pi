@@ -19,7 +19,7 @@ BITRATE = "320"
 # use `--device` with something like `--device hw:0,1`. Your mileage may vary.
 #
 # OPTIONS="--username <USERNAME> --password <PASSWORD>"
-# OPTIONS="--onevent 'mpc stop'"
+OPTIONS = "--onevent /opt/db/db-audio-pi/scripts/spotify.sh"
 #
 # Uncomment to use a cache for downloaded audio files. Cache is disabled by
 # default. It's best to leave this as-is if you want to use it, since
