@@ -49,14 +49,16 @@ class spotify():
                 message = r['error']['message']
 
             except:
-                status = None
-                message = None
+                status = r['status']
+                message = r['message']
+
+            print("Token status and message: %s %s" % (status, message))
 
             if status == 401 and 'invalid' in message.lower():
                 # refresh token
                 AUTH_URL = 'https://accounts.spotify.com/api/token'
 
-                # POST
+                # post
                 auth_response = requests.post(AUTH_URL, {
                     'grant_type': 'client_credentials',
                     'client_id': self.SPOTIPY_CLIENT_ID,
@@ -65,6 +67,7 @@ class spotify():
 
                 # convert the response to JSON
                 auth_response_data = auth_response.json()
+                print(auth_response_data)
 
                 # save the access token
                 self.access_token = auth_response_data['access_token']
@@ -73,12 +76,14 @@ class spotify():
 
             return True
 
-        except:
+        except Exception as e:
+            print(e)
             return False
 
     def track_metadata(self, track_id):
         token = self.auth_token()
-        print(track_id)
+        print("Track id is: %s" % track_id)
+        print("Token is: %s" % str(token))
 
         if token is not False:
 
@@ -103,21 +108,37 @@ class spotify():
             return {'status': 'error', 'error': 'Cannot retrieve track information', 'artist': '', 'track': ''}
 
     def refresh(self):
-        self.config.read(self.path)
-        self.track_info = self.config
+        # read the spotify track info from the file
+        try:
+            self.config.read(self.path)
+            self.track_info = self.config
+        except:
+            pass
 
     def listener(self):
+        # refresh spotify track id
         self.refresh()
-        track_id = self.track_info['INFO']['ID']
-        event = self.track_info['INFO']['EVENT']
-        self.auth_token()
-        track_metadata = self.track_metadata(track_id)
-        print(track_metadata)
+
+        # refresh track info
+        try:
+            track_id = self.track_info['INFO']['ID']
+            event = self.track_info['INFO']['EVENT']
+            # self.auth_token()
+            track_metadata = self.track_metadata(track_id)
+            print(track_metadata)
+
+        # set to none if it can't be retrieved
+        except:
+            track_id = None
 
         while True:
+            # refresh spotify track id
             self.refresh()
+
+            # refresh track info
             try:
                 new_track_id = self.track_info['INFO']['ID']
+            # set to none if it can't be retrieved
             except:
                 new_track_id = None
 
