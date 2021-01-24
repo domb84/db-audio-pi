@@ -20,29 +20,28 @@ class bt_speaker():
                 print('%s does not exist' % path)
         except Exception as e:
             print(e)
-            # print('File path doesn't exist')
 
     def refresh(self):
-        self.config.read(self.path)
-        self.track_info = self.config
-
-    def current_playing_bt(self):
-        self.refresh()
         try:
+            self.config.read(self.path)
+            self.track_info = self.config
             artist = self.track_info['INFO']['ARTIST']
             track_name = self.track_info['INFO']['TITLE']
-            return {'status': 'playing', 'error': '', 'artist': artist, 'track': track_name}
-        except Exception as e:
-            return {'status': 'error', 'error': e, 'artist': '', 'track': ''}
+            return artist, track_name
+        except:
+            return None
 
     def listener(self):
-        track_info = self.current_playing_bt()
+        track_info = self.refresh()
         # print(track_info)
         while True:
-            new_track = self.current_playing_bt()
+            new_track = self.refresh()
             if track_info != new_track:
                 track_info = new_track
                 # send data to signal
-                self.track_data.send('bluetooth', status=track_info['status'], error=track_info['error'],
-                                     artist=track_info['artist'], title=track_info['track'])
+                if track_info is not None:
+                    artist = track_info[0]
+                    track_name = track_info[1]
+                    self.track_data.send('bluetooth', status='playing',
+                                         artist=artist, title=track_name)
             sleep(1)

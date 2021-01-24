@@ -14,18 +14,16 @@ class airplay():
         :param info: track information
         '''
         # print(info)
+        # print(lis)
         try:
             songtime = info['songtime']
-            try:
-                # print(info)
-                artist = info['songartist']
-                track_name = info['itemname']
-                self.track_data.send('airplay', status='playing', error='', artist=artist, title=track_name)
-            except Exception as e:
-                self.track_data.send('airplay', status='error', error=e, artist='', title='')
+            artist = info['songartist']
+            track_name = info['itemname']
+            self.track_data.send('airplay', status='playing', artist=artist, title=track_name)
         except:
             # skip if 'songtime' is missing otherwise we send too many
             pass
+        return
 
     def listener(self):
         listener = AirplayPipeListener()

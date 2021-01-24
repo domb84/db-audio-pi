@@ -82,73 +82,81 @@ class spotify():
 
     def track_metadata(self, track_id):
         token = self.auth_token()
-        print("Track id is: %s" % track_id)
-        print("Token is: %s" % str(token))
 
         if token is not False:
 
-            BASE_URL = 'https://api.spotify.com/v1/'
-            params = {'ids': track_id}
-            headers = {
-                'Authorization': 'Bearer {token}'.format(token=self.access_token)
-            }
-
-            r = requests.get(BASE_URL + 'tracks/', params=params, headers=headers)
-            r = r.json()
-            print(r)
-
             try:
-                artist = r['tracks'][0]['artists'][0]['name']
+                BASE_URL = 'https://api.spotify.com/v1/'
+                params = {'ids': track_id}
+                headers = {
+                    'Authorization': 'Bearer {token}'.format(token=self.access_token)
+                }
+
+                r = requests.get(BASE_URL + 'tracks/', params=params, headers=headers)
+                r = r.json()
+
+                artists = []
+                artist_list = r['tracks'][0]['artists']
+                for artist in artist_list:
+                    artists.append(artist['name'])
+
+                # join artists with comma
+                artists = ", ".join(artists)
+
                 track_name = r['tracks'][0]['name']
-                print(artist, track_name)
-                return {'status': 'playing', 'error': '', 'artist': artist, 'track': track_name}
-            except Exception as e:
-                return {'status': 'error', 'error': e, 'artist': '', 'track': ''}
+                return artists, track_name
+            except:
+                return None
+
         else:
-            return {'status': 'error', 'error': 'Cannot retrieve track information', 'artist': '', 'track': ''}
+            return None
 
     def refresh(self):
         # read the spotify track info from the file
         try:
             self.config.read(self.path)
             self.track_info = self.config
-        except:
-            pass
-
-    def listener(self):
-        # refresh spotify track id
-        self.refresh()
-
-        # refresh track info
-        try:
             track_id = self.track_info['INFO']['ID']
             event = self.track_info['INFO']['EVENT']
-            # self.auth_token()
-            track_metadata = self.track_metadata(track_id)
-            print(track_metadata)
-
-        # set to none if it can't be retrieved
+            return event, track_id
         except:
+            return None
+
+    def listener(self):
+        refresh = self.refresh()
+        if refresh is not None:
+            track_id = refresh[1]
+            status = refresh[0]
+        else:
             track_id = None
+            status = None
+
+        artist = None
+        title = None
 
         while True:
-            # refresh spotify track id
-            self.refresh()
+            updated = False
+            refresh = self.refresh()
+            if refresh is not None:
+                new_track_id = refresh[1]
+                new_status = refresh[0]
 
-            # refresh track info
-            try:
-                new_track_id = self.track_info['INFO']['ID']
-            # set to none if it can't be retrieved
-            except:
-                new_track_id = None
+                if new_status != status:
+                    status = new_status
+                    updated = True
 
-            if track_id != new_track_id:
-                track_id = new_track_id
+                if new_track_id != track_id:
+                    track_id = new_track_id
+                    # send data to signal
+                    if track_id is not None:
+                        track_metadata = self.track_metadata(track_id)
+                        if track_metadata is not None:
+                            artist = track_metadata[0]
+                            title = track_metadata[1]
+                            updated = True
 
-                # get track metadata
-                track_metadata = self.track_metadata(track_id)
+                if updated and artist is not None:
+                    self.track_data.send('spotify', status=status,
+                                         artist=artist, title=title)
 
-                # send data to signal
-                self.track_data.send('spotify', status=track_metadata['status'], error=track_metadata['error'],
-                                     artist=track_metadata['artist'], title=track_metadata['track'])
-            sleep(1)
+                sleep(1)

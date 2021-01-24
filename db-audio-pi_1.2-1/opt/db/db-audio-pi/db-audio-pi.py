@@ -96,19 +96,25 @@ def receiver(sender, **kw):
 
     if sender == mode:
         status = kw['status']
-        error = kw['error']
         artist = kw['artist']
         title = kw['title']
 
+        print(status)
         last_song = {'artist': artist, 'title': title}
 
         if menu_accessed == False:
-            if status != '':
-                if title != '':
-                    menu_manager.display_message(('%s\n%s' % (artist, title)), autoscroll=True)
+            if status == 'playing':
+                icon = '> '
+            elif status == 'paused':
+                icon = '||'
             else:
-                menu_manager.display_message(('%s\n%s' % (status, error)), static=True)
+                icon = False
 
+            if title != '':
+                if icon:
+                    menu_manager.display_message(('%s %s\n%s' % (icon, artist, title)), autoscroll=True)
+                else:
+                    menu_manager.display_message(('%s\n%s' % (artist, title)), autoscroll=True)
 
 @set_mode.connect
 def set_mode(sender, **kw):
