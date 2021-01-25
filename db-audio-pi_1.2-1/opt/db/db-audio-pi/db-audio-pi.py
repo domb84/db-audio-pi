@@ -103,16 +103,12 @@ def receiver(sender, **kw):
         last_song = {'artist': artist, 'title': title}
 
         if menu_accessed == False:
-            if status == 'playing':
-                icon = '> '
-            elif status == 'paused':
-                icon = '||'
-            else:
-                icon = False
 
-            if title != '':
-                if icon:
-                    menu_manager.display_message(('%s %s\n%s' % (icon, artist, title)), autoscroll=True)
+            if title != '' or None:
+                if status == 'playing':
+                    menu_manager.display_message(('%s %s\n%s' % ('> ', artist, title)), autoscroll=True)
+                elif status == 'paused':
+                    menu_manager.display_message(('%s %s\n%s' % ('||', artist, title)), autoscroll=False)
                 else:
                     menu_manager.display_message(('%s\n%s' % (artist, title)), autoscroll=True)
 
