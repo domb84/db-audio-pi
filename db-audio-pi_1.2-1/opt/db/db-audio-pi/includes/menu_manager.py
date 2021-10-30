@@ -1,3 +1,8 @@
+import logging
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+
+
 from subprocess import call
 from time import sleep
 
@@ -130,7 +135,7 @@ class menu_manager:
 
 
         except Exception as e:
-            print(e)
+            logger.debug(e)
 
         # catch if the submenu sets the index too high, else menu will fail as it cannot select an item
         if self.menu.current_option > (len(self.menu.items) - 1):
@@ -172,7 +177,7 @@ class menu_manager:
                         if status is False:
                             failed.append(n2)
                         for i in d2:
-                            # print(i)
+                            # logger.debug(i)
                             d_service = d2[i]['service']
                             d_on_action = d2[i]['on_action']
                             d_action = d2[i]['action']
@@ -189,7 +194,7 @@ class menu_manager:
                     d3 = v['details']['dependancies']
                     if n3 == name:
                         for i in d3:
-                            # print(i)
+                            # logger.debug(i)
                             d_service = d3[i]['service']
                             d_on_action = d3[i]['on_action']
                             d_action = d3[i]['action']
@@ -200,7 +205,7 @@ class menu_manager:
                                     failed.append(d_service)
 
         # show error message on failure
-        print("Had %s failures" % failed)
+        logger.debug("Had %s failures" % failed)
         if len(failed) > 0:
             for i in failed:
                 self.display_message('Failed to stop or start\n%s' % i, autoscroll=True)
@@ -208,7 +213,7 @@ class menu_manager:
         elif service != None:
             # proceed with other action if theres no failures
             status = tools.service(service, action)
-            print('Status of service is: %s ' % str(status))
+            logger.debug('Status of service is: %s ' % str(status))
 
             # if starting the service is successful
             if status is True and action == 'start':
@@ -227,7 +232,7 @@ class menu_manager:
 
         if rebuild_menu is not True:
             return self
-        # print('Hit the end of service manager. Rebuilding menu.')
+        # logger.debug('Hit the end of service manager. Rebuilding menu.')
         return self.build_service_menu()
 
 

@@ -1,3 +1,8 @@
+import logging
+
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+
 import ast
 import os
 import sys
@@ -46,7 +51,7 @@ try:
     menu_manager = menu_manager.menu_manager(services, DEVICE)
 
 except Exception as e:
-    print('Exiting with error : ' + str(e))
+    logger.debug('Exiting with error : ' + str(e))
     exit(1)
 
 
@@ -72,7 +77,7 @@ class BaseThread(threading.Thread):
 
 
 def shutdown_app():
-    # print('Shutting down')
+    # logger.debug('Shutting down')
     try:
         menu_manager.display_message(('Shutting down \nsystem').upper(), clear=True)
         os._exit(0)
@@ -85,8 +90,8 @@ def shutdown_app():
 @track_data.connect
 def receiver(sender, **kw):
     global menu_accessed, mode, last_song
-    # print('Got a signal sent by %r' % sender)
-    # print('Message received from %s' % sender)
+    # logger.debug('Got a signal sent by %r' % sender)
+    # logger.debug('Message received from %s' % sender)
 
     if sender == 'request':
         if last_song['title'] != '':
@@ -99,7 +104,7 @@ def receiver(sender, **kw):
         artist = kw['artist']
         title = kw['title']
 
-        print(status)
+        logger.debug(status)
         last_song = {'artist': artist, 'title': title}
 
         if menu_accessed == False:
@@ -116,7 +121,7 @@ def receiver(sender, **kw):
 def set_mode(sender, **kw):
     global mode
     mode = kw['mode']
-    print('Mode changed to %s.' % mode)
+    logger.debug('Mode changed to %s.' % mode)
     # do not attempt to  rebuild the menu here as it breaks the menu.
     # return menu_manager.build_service_menu(services)
     return
@@ -125,7 +130,7 @@ def set_mode(sender, **kw):
 def receive_controls(sender, **kw):
     global menu_accessed, mode
 
-    print('Menu instance %s' % menu_manager)
+    logger.debug('Menu instance %s' % menu_manager)
 
     if kw['control'] == 'clockwise':
         menu_manager.menu = menu_manager.menu.processDown()
@@ -219,7 +224,7 @@ def main():
         if menu_accessed == True:
             counter += 1
 
-        # print(counter)
+        # logger.debug(counter)
         if counter == 3:
             menu_accessed = False
             counter = 0

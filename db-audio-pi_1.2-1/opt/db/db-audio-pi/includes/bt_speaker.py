@@ -1,3 +1,8 @@
+import logging
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+
+
 import configparser
 import os
 from time import sleep
@@ -15,11 +20,11 @@ class bt_speaker():
             self.config = configparser.ConfigParser()
             self.path = path
             if os.path.exists(path):
-                print('%s exists' % path)
+                logger.debug('%s exists' % path)
             else:
-                print('%s does not exist' % path)
+                logger.debug('%s does not exist' % path)
         except Exception as e:
-            print(e)
+            logger.debug(e)
 
     def refresh(self):
         try:
@@ -33,7 +38,7 @@ class bt_speaker():
 
     def listener(self):
         track_info = self.refresh()
-        # print(track_info)
+        # logger.debug(track_info)
         while True:
             new_track = self.refresh()
             if track_info != new_track:

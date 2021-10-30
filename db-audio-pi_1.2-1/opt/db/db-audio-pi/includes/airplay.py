@@ -1,4 +1,8 @@
 # from time import sleep
+import logging
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+
 from blinker import signal
 from shairportmetadatareader import AirplayPipeListener
 
@@ -9,12 +13,12 @@ class airplay():
 
     def on_track_info(self, lis, info):
         '''
-        Print the current track information.
+        logger.debug the current track information.
         :param lis: listener instance
         :param info: track information
         '''
-        # print(info)
-        # print(lis)
+        # logger.debug(info)
+        # logger.debug(lis)
         try:
             songtime = info['songtime']
             artist = info['songartist']

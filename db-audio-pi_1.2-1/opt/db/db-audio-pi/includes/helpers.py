@@ -1,3 +1,7 @@
+import logging
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+
 import configparser
 import os
 import re
@@ -14,7 +18,7 @@ class tools:
         if os.path.exists(path):
             self.config.read(path)
             for i in self.config:
-                print(i)
+                logger.debug(i)
         return self.config
 
     def service(self, service, action):
@@ -29,12 +33,12 @@ class tools:
                 except:
                     pass
                 rc = process.returncode
-                print("Start service %s returned: %s" % (service, str(rc)))
+                logger.debug("Start service %s returned: %s" % (service, str(rc)))
                 if rc == 0:
-                    print("Started: %s" % service)
+                    logger.debug("Started: %s" % service)
                     return True
                 else:
-                    print("Failed to start: %s" % service)
+                    logger.debug("Failed to start: %s" % service)
                     return False
 
             elif action == 'stop':
@@ -47,12 +51,12 @@ class tools:
                 except:
                     pass
                 rc = process.returncode
-                print("Stop service %s returned: %s" % (service, str(rc)))
+                logger.debug("Stop service %s returned: %s" % (service, str(rc)))
                 if rc == 0 or 5:
-                    print("Stopped: %s" % service)
+                    logger.debug("Stopped: %s" % service)
                     return True
                 else:
-                    print("Failed to stop: %s" % service)
+                    logger.debug("Failed to stop: %s" % service)
                     return False
 
             elif action == 'enable':
@@ -65,12 +69,12 @@ class tools:
                 except:
                     pass
                 rc = process.returncode
-                print("Enable service %s returned: %s" % (service, str(rc)))
+                logger.debug("Enable service %s returned: %s" % (service, str(rc)))
                 if rc == 0:
-                    print("Enabled: %s" % service)
+                    logger.debug("Enabled: %s" % service)
                     return True
                 else:
-                    print("Failed to enable: $s" % service)
+                    logger.debug("Failed to enable: $s" % service)
                     return False
 
             elif action == 'disable':
@@ -83,15 +87,15 @@ class tools:
                 except:
                     pass
                 rc = process.returncode
-                print("Disable service %s returned: %s" % (service, str(rc)))
+                logger.debug("Disable service %s returned: %s" % (service, str(rc)))
                 if rc == 0:
-                    print("Disabled: %s" % service)
+                    logger.debug("Disabled: %s" % service)
                     return True
                 else:
                     if 'does not exist' in output or err:
-                        print("%s does not exist" % service)
+                        logger.debug("%s does not exist" % service)
                         return True
-                    print("Failed to disable: %s" % service)
+                    logger.debug("Failed to disable: %s" % service)
                     return False
 
 
@@ -100,16 +104,16 @@ class tools:
                                            stdout=subprocess.PIPE, stderr=subprocess.PIPE)
                 output, err = process.communicate()
                 rc = process.returncode
-                print("Status of service %s returned: %s" % (service, str(rc)))
+                logger.debug("Status of service %s returned: %s" % (service, str(rc)))
                 if rc == 0:
-                    print("Service %s running" % service)
+                    logger.debug("Service %s running" % service)
                     return True
                 else:
-                    print("Service %s is not running" % service)
+                    logger.debug("Service %s is not running" % service)
                     return False
 
         except Exception as e:
-            print("Service processing failure: %s" % e)
+            logger.debug("Service processing failure: %s" % e)
             return False
 
     def app_status(self, application):
@@ -118,11 +122,11 @@ class tools:
             try:
                 # Check if process name contains the given name string.
                 if application.lower() in proc.name().lower():
-                    print("%s: running" % application)
+                    logger.debug("%s: running" % application)
                     return True
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                 pass
-        print("%s: not running" % application)
+        logger.debug("%s: not running" % application)
         return False
 
     def app_kill(self, application):
@@ -135,12 +139,12 @@ class tools:
         except:
             pass
         rc = process.returncode
-        print("Kill %s return: %s" % (application, str(rc)))
+        logger.debug("Kill %s return: %s" % (application, str(rc)))
         if rc == 0:
-            print("Killed: %s" % application)
+            logger.debug("Killed: %s" % application)
             return True
         else:
-            print("Failed to kill: %s" % application)
+            logger.debug("Failed to kill: %s" % application)
             return False
 
     def app_start(self, application, arguments=None):
@@ -154,10 +158,10 @@ class tools:
             command = subprocess.Popen(app, stdout=subprocess.PIPE)
         rc = command.returncode
         if rc != 1:
-            print("Started: %s with args: %s and rc: %s" % (application, arguments, str(rc)))
+            logger.debug("Started: %s with args: %s and rc: %s" % (application, arguments, str(rc)))
             return True
         else:
-            print("Failed to start: %s with args: %s and rc: %s" % (application, arguments, str(rc)))
+            logger.debug("Failed to start: %s with args: %s and rc: %s" % (application, arguments, str(rc)))
             return False
 
     def wifi(self):

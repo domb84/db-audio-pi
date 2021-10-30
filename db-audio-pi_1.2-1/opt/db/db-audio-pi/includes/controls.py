@@ -1,4 +1,8 @@
 from time import sleep
+import logging
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
+
 
 import adafruit_bitbangio as bitbangio
 import adafruit_mcp3xxx.mcp3008 as MCP
@@ -50,7 +54,7 @@ class controls:
         pi.callback(Enc_A, pigpio.EITHER_EDGE, rotary_interrupt)
         pi.callback(Enc_B, pigpio.EITHER_EDGE, rotary_interrupt)
 
-        print('Rotary thread start successfully, listening for turns')
+        logger.debug('Rotary thread start successfully, listening for turns')
 
     def buttons(self):
         # mcp3008 button reader setup
@@ -64,7 +68,7 @@ class controls:
         chan1 = AnalogIn(mcp, MCP.P7)
         chan2 = AnalogIn(mcp, MCP.P0)
 
-        print('MCP3008 thread start successfully, listening for buttons')
+        logger.debug('MCP3008 thread start successfully, listening for buttons')
 
         while True:
             # read button states
@@ -91,7 +95,7 @@ class controls:
             elif 44000 <= chan2.value <= 48000:
                 self.controller.send('controls', control='dimmer')
             elif chan1.value <= 64000:
-                print('Uncaught press on Channel 1 %s' % chan1.value)
+                logger.debug('Uncaught press on Channel 1 %s' % chan1.value)
             elif chan2.value <= 64000:
-                print('Uncaught press on  Channel 2 %s' % chan2.value)
+                logger.debug('Uncaught press on  Channel 2 %s' % chan2.value)
             sleep(0.2)
