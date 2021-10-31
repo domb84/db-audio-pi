@@ -10,10 +10,6 @@ from time import sleep
 import requests
 from blinker import signal
 
-
-
-
-
 # useful info
 # https://github.com/librespot-org/librespot/issues/185
 # https://stmorse.github.io/journal/spotify-api.html
@@ -23,6 +19,10 @@ class spotify():
     def __init__(self, path, client_id, client_secret):
         # init signal sender
         self.track_data = signal('track-data')
+        self.track_id = None
+        self.event = None
+        self.artist = None
+        self.title = None
 
         try:
             self.config = configparser.ConfigParser()
@@ -121,12 +121,14 @@ class spotify():
             track_name = r['tracks'][0]['name']
             return artists, track_name
         except:
+            logger.debug("Failed to get track meta.")
             return None
 
     def track_metadata(self, track_id):
+        # Try and get track metadata, if it fails, refresh the token and try again, otherwise return None
         try:
             track = self.get_track_meta(track_id)
-            logger.debug(track)
+            # logger.debug(track)
             if track is not None:
                 artists = track[0]
                 track_name = track[1]
@@ -143,52 +145,58 @@ class spotify():
             return None
 
     def refresh(self):
-        # read the spotify track info from the file
+        # read the spotify track info from the file and get meta
         try:
-            self.config.read(self.path)
-            self.track_info = self.config
-            track_id = self.track_info['INFO']['ID']
-            event = self.track_info['INFO']['EVENT']
-            return event, track_id
-        except:
-            return None
-
-    def listener(self):
-        # Refreshes track file and sends to panel if its changed
-        refresh = self.refresh()
-        if refresh is not None:
-            track_id = refresh[1]
-            status = refresh[0]
-        else:
-            track_id = None
-            status = None
-
-        artist = None
-        title = None
-
-        while True:
             updated = False
-            refresh = self.refresh()
-            if refresh is not None:
-                new_track_id = refresh[1]
-                new_status = refresh[0]
+            self.config.read(self.path)
+            track_info = self.config
+            new_track_id = track_info['INFO']['ID']
+            new_event = track_info['INFO']['EVENT']
 
-                if new_status != status:
-                    status = new_status
+            # check if the track has changed and get new metadata
+            if new_track_id != self.track_id:
+
+                logging.debug("Track ID changed from {0} to {1}, grabbing meta".format(self.track_id,new_track_id))
+
+                self.track_id = new_track_id
+                if self.track_id is not None:
+                    track_metadata = self.track_metadata(self.track_id)
+                    if track_metadata is not None:
+                        self.artist = track_metadata[0]
+                        self.title = track_metadata[1]
+                        updated = True
+
+            # check if the event has changed
+            if new_event != self.event:
+                # only update the event if it's not "change" as we have no use for changed tracks. The track ID would also have changed at that point.
+                if new_event != "change":
+                    self.event = new_event
                     updated = True
 
-                if new_track_id != track_id:
-                    track_id = new_track_id
-                    # send data to signal
-                    if track_id is not None:
-                        track_metadata = self.track_metadata(track_id)
-                        if track_metadata is not None:
-                            artist = track_metadata[0]
-                            title = track_metadata[1]
-                            updated = True
+            if updated:
+                return self.event, self.artist, self.title
 
-                if updated and artist is not None:
+        except Exception as e:
+            logger.debug(e)
+            return None
+
+
+
+    def listener(self):
+        # print the track status if it's changed in some way
+        track_info = self.refresh()
+        logger.debug(track_info)
+        while True:
+            new_track = self.refresh()
+            if track_info != new_track:
+                track_info = new_track
+                # send data to signal
+                if track_info is not None:
+                    status = track_info[0]
+                    artist = track_info[1]
+                    track_name = track_info[2]
+                    logger.debug(track_info)
+
                     self.track_data.send('spotify', status=status,
-                                         artist=artist, title=title)
-
-                sleep(1)
+                                         artist=artist, title=track_name)
+            sleep(1)

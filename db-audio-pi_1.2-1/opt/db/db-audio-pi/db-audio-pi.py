@@ -90,8 +90,7 @@ def shutdown_app():
 @track_data.connect
 def receiver(sender, **kw):
     global menu_accessed, mode, last_song
-    # logger.debug('Got a signal sent by %r' % sender)
-    # logger.debug('Message received from %s' % sender)
+    logger.debug('Got a signal sent by %r' % sender)
 
     if sender == 'request':
         if last_song['title'] != '':

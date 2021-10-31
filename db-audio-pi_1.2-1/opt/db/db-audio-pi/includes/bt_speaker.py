@@ -38,7 +38,7 @@ class bt_speaker():
 
     def listener(self):
         track_info = self.refresh()
-        # logger.debug(track_info)
+        logger.debug(track_info)
         while True:
             new_track = self.refresh()
             if track_info != new_track:
