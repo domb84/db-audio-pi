@@ -4,7 +4,7 @@ Section: base
 Priority: optional
 Architecture: armhf
 Depends: python3 (>= 3.7.3), pigpio, python-pigpio, python3-pigpio, build-essential, git, xmltoman, autoconf, automake, libtool, libdaemon-dev, libpopt-dev, libconfig-dev,
- libasound2-dev, libpulse-dev, avahi-daemon, libavahi-client-dev, libssl-dev, libmbedtls-dev, libsoxr-dev, libsndfile1-dev, nymea-networkmanager, dirmngr
+ libasound2-dev, libpulse-dev, avahi-daemon, libavahi-client-dev, libssl-dev, libmbedtls-dev, libsoxr-dev, libsndfile1-dev, nymea-networkmanager, dirmngr,
 Maintainer: Dominic Bird <dominic@dominicbird.com>
 Description: DB Audio Pi
  Python project to control a TEAC tuner

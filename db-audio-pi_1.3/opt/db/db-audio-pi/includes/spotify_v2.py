@@ -24,6 +24,9 @@ class spotify():
         self.artist = None
         self.title = None
 
+        # TODO fix that if the .spot_track file doesnt exist it repeats ['INFO'] to the log
+
+
         try:
             self.config = configparser.ConfigParser()
             self.path = path
